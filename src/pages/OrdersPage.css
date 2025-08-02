@@ -1,0 +1,396 @@
+/* src/pages/OrdersPage.css */
+
+/* -----------gf-------------- */
+/* --- ОБЩИЕ СТИЛИ ТЕЛА --- */
+/* ------------------------- */
+body {
+    background-color: #f8f9fa; /* Слегка серый фон для всей страницы */
+    color: #212529; /* Чуть более мягкий черный для текста */
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+    margin: 0;
+    padding: 2rem;
+}
+
+/* --------------------------------- */
+/* --- ОСНОВНОЙ КОНТЕЙНЕР-КАРТОЧКА --- */
+/* --------------------------------- */
+.order-page-container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.75rem; 
+    /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.07); */ /* <--- ЗАКОММЕНТИРУЙТЕ ЕЁ */
+    margin-bottom: 2rem;
+}
+
+/* ----------------- */
+/* --- ТИПОГРАФИЯ --- */
+/* ----------------- */
+h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+}
+
+/* --------------- */
+/* --- ФОРМЫ --- */
+/* --------------- */
+.form-section label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+    background-color: #fff;
+    box-sizing: border-box; /* Важно для правильной ширины */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    height: 46px;
+}
+
+.form-input:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-select:disabled {
+    background-color: #e9ecef;
+    opacity: 0.7;
+}
+
+.details-row {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #f8f9fa;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Адаптивная сетка */
+    gap: 1rem; /* Пространство между элементами */
+}
+
+
+/* ----------------- */
+/* --- КНОПКИ --- */
+/* ----------------- */
+.btn {
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid transparent;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.15s ease-in;
+    text-decoration: none;
+    margin-right: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.btn-secondary {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+.btn-secondary:hover {
+    background-color: #5c636a;
+    border-color: #565e64;
+}
+
+.btn-danger {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+}
+
+
+/* ----------------- */
+/* --- ТАБЛИЦА --- */
+/* ----------------- */
+.orders-table {
+    width: 100%;
+    border-collapse: collapse; /* Убираем двойные рамки */
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 0.4rem 0.75rem; /* Уменьшили вертикальные отступы */
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 0.9rem; /* <--- УМЕНЬШИЛИ ШРИФТ */
+}
+
+.orders-table thead th {
+    border-bottom-width: 2px;
+    font-weight: 600;
+}
+
+.orders-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa; /* Чередующийся цвет строк */
+}
+
+.orders-table ul {
+    padding-left: 1.2rem;
+    margin: 0;
+}
+
+
+/* --------------------------------- */
+/* --- СООБЩЕНИЯ (УСПЕХ/ОШИБКА) --- */
+/* --------------------------------- */
+.form-message {
+    padding: 1rem;
+    margin-top: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.form-message.success {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border: 1px solid #badbcc;
+}
+
+.form-message.error {
+    color: #842029;
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+}
+
+/* ------------------------------------ */
+/* --- СТИЛИ ДЛЯ МОДАЛЬНОГО ОКНА --- */
+/* ------------------------------------ */
+.confirm-modal-overlay {
+    position: fixed; /* Поверх всего */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Выше всех остальных элементов */
+}
+
+.confirm-modal-dialog {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 450px; /* Максимальная ширина окна */
+    width: 90%;
+}
+
+.confirm-modal-dialog h3 {
+    margin-top: 0;
+}
+
+.confirm-modal-buttons {
+    margin-top: 1.5rem;
+}
+
+/* --- СТИЛИ ДЛЯ КОМПАКТНОГО ЧЕК-ЛИСТА --- */
+.checklist-item-wrapper {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.checklist-item {
+  display: flex;
+  justify-content: space-between; /* Элементы по краям */
+  align-items: center; /* Выравнивание по центру */
+  gap: 1rem; /* Пространство между элементами */
+}
+
+.checklist-item-name {
+  font-weight: 500;
+}
+
+.checklist-item-controls {
+  white-space: nowrap; /* Чтобы кнопки "Пройдено" и "Брак" не переносились на новую строку */
+}
+
+.checklist-item-controls label {
+  margin-left: 4px; /* Небольшой отступ от самой радио-кнопки */
+  margin-right: 12px; /* Расстояние МЕЖДУ "Пройдено" и "Брак" */
+}
+
+/* Убираем лишний отступ у последней метки "Брак", чтобы она не сдвигала блок */
+.checklist-item-controls label:last-of-type {
+  margin-right: 0;
+}
+
+.form-input-compact {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.btn-compact {
+    padding: 0.2rem 0.6rem;   /* Уменьшили отступы */
+    font-size: 0.8rem;       /* Уменьшили шрифт */
+    margin-top: 0;
+    width: 100px;            /* Задали фиксированную ширину */
+    text-align: center;      /* Центрировали текст */
+}
+
+.details-grid .form-section > label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 24px; /* Задаем минимальную высоту для всех заголовков */
+}
+
+.add-button-in-select {
+    position: absolute;
+    /* Двигаем левее стрелки-индикатора */
+    right: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    /* Стили самой кнопки */
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 2px 7px;
+    z-index: 2; /* Отображаем поверх других элементов */
+}
+
+.add-button-in-select:hover {
+    background: #e0e0e0;
+}
+
+.details-grid .form-section [class$="-control"] {
+    min-height: 46px;
+}
+
+.balances-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.balance-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    flex-grow: 1;
+    min-width: 150px;
+    text-align: center;
+}
+
+.balance-card h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.balance-card p {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.balance-positive {
+    color: #198754; /* Зеленый */
+}
+
+.balance-negative {
+    color: #dc3545; /* Красный */
+}
+
+.action-buttons-container {
+    display: flex;
+    flex-direction: column; /* Выравнивает кнопки в столбик */
+    align-items: flex-start; /* Прижимает их к левому краю ячейки */
+    gap: 5px; /* Добавляет отступ между кнопками */
+}
+
+/* --- Стили для карточек на странице инспекции --- */
+.inspection-item {
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  /* VVV ИЗМЕНЕНИЕ: Уменьшаем вертикальный отступ VVV */
+  padding: 0.75rem 1rem; 
+  /* VVV ИЗМЕНЕНИЕ: Уменьшаем расстояние между карточками VVV */
+  margin-bottom: 0.5rem; 
+  background-color: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.inspection-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #dee2e6;
+  background-color: #fff;
+}
+
+.inspection-item small {
+  color: #6c757d;
+}
+
+/* Стили для формы поиска на странице истории */
+.search-form-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Расстояние между полем и кнопкой */
+}
+
+.search-form-container .form-input {
+  width: 400px; /* Фиксированная ширина поля, примерно 7-8 см */
+  flex-grow: 0; /* Запрещаем полю растягиваться */
+}
+
+.search-form-container .btn {
+  margin-top: 0; /* Убираем стандартный верхний отступ у кнопки */
+}

@@ -1,0 +1,47 @@
+<label>
+                                        Память:
+                                        <select 
+                                            value={detail.storage_id || ''} 
+                                            onChange={(e) => handleDetailChange(index, 'storage_id', e.target.value)} 
+                                            required 
+                                            style={inputStyle}
+                                        >
+                                            <option value="">Выберите память</option>
+                                            {/* MODIFY: Фильтрация storageOptions для выбранной базовой модели */}
+                                            {/* Показываем только те опции памяти, которые существуют для выбранной базовой модели */}
+                                            {storageOptions.filter(s => 
+                                                models.some(m => 
+                                                    m.model_name?.id === parseInt(detail.model_base_id) && 
+                                                    m.storage?.id === s.id
+                                                )
+                                            ).map(s => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.storage}GB (ID: {s.id})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        Цвет:
+                                        <select 
+                                            value={detail.color_id || ''} 
+                                            onChange={(e) => handleDetailChange(index, 'color_id', e.target.value)} 
+                                            required 
+                                            style={inputStyle}
+                                        >
+                                            <option value="">Выберите цвет</option>
+                                            {/* MODIFY: Фильтрация colorOptions для выбранной комбинации базовой модели и памяти */}
+                                            {/* Показываем только те опции цвета, которые существуют для выбранной базовой модели и памяти */}
+                                            {colorOptions.filter(c => 
+                                                models.some(m => 
+                                                    m.model_name?.id === parseInt(detail.model_base_id) && 
+                                                    m.storage?.id === parseInt(detail.storage_id) && 
+                                                    m.color?.id === c.id
+                                                )
+                                            ).map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.color_name} (ID: {c.id})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>

@@ -1,0 +1,69 @@
+/* src/App.css */
+
+.app-container {
+    display: flex;
+    height: 97vh; /* Занимает всю высоту экрана */
+}
+/* Стили для боковой панели */
+.sidebar {
+    width: 220px;
+    min-width: 220px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    
+}
+
+.sidebar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    
+}
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+/* Стили для ссылок в меню */
+.nav-link {
+    display: block;
+    text-decoration: none;
+    color: #212529;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background-color: #e9ecef;
+    color: #0d6efd;
+}
+
+/* Стиль для активной (текущей) ссылки */
+.nav-link.active {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+/* Стили для основной контентной части */
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto; /* Включает прокрутку ТОЛЬКО для этого блока */
+}
+
+.logout-container {
+    margin-top: auto; /* Эта строка прижимает кнопку к низу */
+}

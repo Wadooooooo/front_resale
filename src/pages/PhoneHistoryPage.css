@@ -1,0 +1,108 @@
+.timeline {
+    position: relative;
+    padding-left: 30px; /* Оставляем место для линии и точек */
+    list-style: none;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 5px;
+    bottom: 5px;
+    width: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -28px; /* Сдвигаем точку на линию */
+    top: 5px;
+    width: 14px;
+    height: 14px;
+    background: #0d6efd;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.timeline-date {
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.timeline-content h3 {
+    margin-top: 0;
+    font-size: 1.25rem;
+    color: #0d6efd;
+}
+
+.timeline-subtitle {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #495057;
+}
+
+.timeline-checklist {
+    padding-left: 20px;
+    margin: 0;
+    list-style-type: disc;
+}
+
+.timeline-checklist li {
+    margin-bottom: 0.25rem;
+}
+
+.status-pass {
+    font-weight: bold;
+    color: #198754; /* Зеленый */
+}
+
+.status-fail {
+    font-weight: bold;
+    color: #dc3545; /* Красный */
+}
+
+.checklist-note {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.timeline-checklist-details {
+  list-style-type: none; /* Убираем стандартные маркеры */
+  padding-left: 0;      /* Убираем отступ по умолчанию */
+  margin-top: 0.5rem;
+}
+
+.timeline-checklist-details li {
+  position: relative;
+  padding-left: 20px; /* Создаем место для нашей кастомной точки */
+  margin-bottom: 4px; /* Небольшой отступ между пунктами */
+}
+
+.timeline-checklist-details li::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 7px; /* Положение точки по вертикали, можно подобрать */
+  width: 8px;
+  height: 8px;
+  background-color: #0d6efd; /* Тот же синий цвет, что и у основной точки таймлайна */
+  border-radius: 50%; /* Делаем круглой */
+}
