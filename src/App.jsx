@@ -3,7 +3,7 @@
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
-import './App.css'; 
+import './App.css';
 import './pages/OrdersPage.css';
 
 import LoginPage from './pages/LoginPage.jsx';
@@ -23,6 +23,7 @@ import ReturnsPage from './pages/ReturnsPage.jsx';
 import EmployeesPage from './pages/EmployeesPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 
+// Этот компонент отвечает за основную структуру страницы (меню + контент)
 function MainLayout() {
   const { logout, hasPermission } = useAuth();
 
@@ -31,21 +32,22 @@ function MainLayout() {
       <nav className="sidebar">
         <h2 className="sidebar-title">Меню</h2>
         <ul className="nav-list">
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/phones" className="nav-link">Телефоны</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/suppliers" className="nav-link">Поставщики</NavLink></li>}
-            {(hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) && <li className="nav-item"><NavLink to="/orders" className="nav-link">Заказы Поставщиков</NavLink></li>}
-            {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
-            {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/returns" className="nav-link">Брак/Возвраты</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/accessories" className="nav-link">Аксессуары</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/compatibility" className="nav-link">Совместимость</NavLink></li>}
+            {/* Ссылки, которые будут показаны в зависимости от прав доступа */}
+            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
+            {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
+            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
+            {(hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) && <li className="nav-item"><NavLink to="/orders" className="nav-link">Заказы</NavLink></li>}
+            {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/returns" className="nav-link">Брак/Возвраты</NavLink></li>}
+            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/phones" className="nav-link">Телефоны</NavLink></li>}
+            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/accessories" className="nav-link">Аксессуары</NavLink></li>}
+            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/suppliers" className="nav-link">Поставщики</NavLink></li>}
+            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/compatibility" className="nav-link">Совместимость</NavLink></li>}
             {hasPermission('manage_pricing') && <li className="nav-item"><NavLink to="/pricing" className="nav-link">Цены</NavLink></li>}
-            {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Движение денег</NavLink></li>}
+            {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Финансы</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
-            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
+            <li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>
         </ul>
         <div className="logout-container">
             <button onClick={logout} className="btn btn-secondary" style={{width: '100%'}}>Выйти</button>
@@ -53,10 +55,12 @@ function MainLayout() {
       </nav>
 
       <main className="main-content">
+        {/* Здесь будут отображаться компоненты страниц */}
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/phones" element={<PhonesPage />} />
-          <Route path="/phone-history" element={<PhoneHistoryPage />} />
+          <Route path="/phone-history/:serialNumber" element={<PhoneHistoryPage />} />
+          <Route path="/phone-history/" element={<PhoneHistoryPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/inspection" element={<InspectionPage />} />
@@ -69,6 +73,7 @@ function MainLayout() {
           <Route path="/cashflow" element={<CashFlowPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
+          {/* Если ни один путь не совпал, перенаправляем на рабочий стол */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
@@ -76,15 +81,18 @@ function MainLayout() {
   );
 }
 
+// Этот компонент - точка входа. Он решает, показать страницу входа или приложение.
 function App() {
   const { token } = useAuth();
   
   return (
     <Routes>
-      {!token ? (
-          <Route path="*" element={<LoginPage />} />
+      {token ? (
+          // Если пользователь авторизован, загружаем основной макет
+          <Route path="/*" element={<MainLayout />} />
       ) : (
-          <Route path="*" element={<MainLayout />} />
+          // Если нет, любой путь ведет на страницу входа
+          <Route path="*" element={<LoginPage />} />
       )}
     </Routes>
   );

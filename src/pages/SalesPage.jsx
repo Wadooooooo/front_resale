@@ -57,15 +57,15 @@ function SalesPage() {
                 setLoading(true);
                 // Теперь мы всегда загружаем счета вместе с остальными данными
                 const [
-                    productsData, 
-                    customersData, 
+                    productsData,
+                    customersData,
                     accountsData
                 ] = await Promise.all([
                     getProductsForSale(),
                     getCustomers(),
                     getAccounts()
                 ]);
-                
+
                 setProducts(productsData);
                 setCustomers(customersData);
                 setAccounts(accountsData);
@@ -84,12 +84,12 @@ function SalesPage() {
 
     // Опции для выпадающих списков
     const productOptions = products
-      .filter(p => !cart.some(cartItem => cartItem.warehouse_id === p.warehouse_id))
-      .map(p => ({
-        value: p.warehouse_id,
-        label: `${p.name} (Цена: ${p.price} руб.) ${p.serial_number ? `S/N: ${p.serial_number}` : ` | Остаток: ${p.quantity}`}`,
-        product: p
-    }));
+        .filter(p => !cart.some(cartItem => cartItem.warehouse_id === p.warehouse_id))
+        .map(p => ({
+            value: p.warehouse_id,
+            label: `${p.name} (Цена: ${p.price} руб.) ${p.serial_number ? `S/N: ${p.serial_number}` : ` | Остаток: ${p.quantity}`}`,
+            product: p
+        }));
     const customerOptions = customers.map(c => ({ value: c.id, label: `${c.name || 'Имя не указано'} (${c.number || 'Номер не указан'})` }));
 
     // Опции счетов для перевода
@@ -127,8 +127,8 @@ function SalesPage() {
     const addRecommendedToCart = (accessory) => {
         const productOnWarehouse = products.find(p => p.product_id === accessory.id && p.product_type === 'Аксессуар');
         if (productOnWarehouse) {
-             handleAddToCart({ value: productOnWarehouse.warehouse_id, product: productOnWarehouse });
-             setRecommendedAccessories(prev => prev.filter(rec => rec.id !== accessory.id));
+            handleAddToCart({ value: productOnWarehouse.warehouse_id, product: productOnWarehouse });
+            setRecommendedAccessories(prev => prev.filter(rec => rec.id !== accessory.id));
         } else {
             alert(`Аксессуар "${accessory.name}" закончился на складе.`);
         }
@@ -212,11 +212,11 @@ function SalesPage() {
                     <thead>
                         <tr>
                             <th>Товар</th>
-                            <th style={{width: '100px'}}>Кол-во</th>
-                            <th style={{width: '120px'}}>Цена</th>
-                            <th style={{width: '120px'}}>Сумма</th>
-                            {hasPhoneInCart && <th style={{width: '100px'}}>Подарок</th>}
-                            <th style={{width: '50px'}}></th>
+                            <th style={{ width: '100px' }}>Кол-во</th>
+                            <th style={{ width: '120px' }}>Цена</th>
+                            <th style={{ width: '120px' }}>Сумма</th>
+                            {hasPhoneInCart && <th style={{ width: '100px' }}>Подарок</th>}
+                            <th style={{ width: '50px' }}></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -240,9 +240,26 @@ function SalesPage() {
                         )}
                     </tbody>
                 </table>
-                {recommendedAccessories.length > 0 && ( <div className="recommended-accessories">{/*...*/}</div> )}
+                {recommendedAccessories.length > 0 && (
+    <div className="recommended-accessories">
+            <h4>Рекомендуемые аксессуары:</h4>
+            <div className="recommended-items-grid">
+                {recommendedAccessories.map(acc => (
+                    <div key={acc.id} className="recommended-item">
+                        <span>{acc.name} ({acc.current_price} руб.)</span>
+                        <button 
+                            onClick={() => handleAddRecommendedToCart(acc)} 
+                            className="btn btn-secondary btn-compact"
+                        >
+                            Добавить
+                        </button>
+                    </div>
+                ))}
             </div>
-            
+        </div>
+    )}   
+            </div>
+
             <div className="order-page-container">
                 <h2>2. Укажите детали продажи</h2>
                 <div className="details-grid">
@@ -261,12 +278,27 @@ function SalesPage() {
                     <p>Скидка: <span>-{(parseFloat(discount) || 0).toFixed(2)} руб.</span></p>
                     <h3>Итого: <span>{totalAmount.toFixed(2)} руб.</span></h3>
                 </div>
-                <button onClick={handleSubmitSale} className="btn btn-primary" style={{float: 'right'}} disabled={cart.length === 0 || isSubmitting}>
+                <button onClick={handleSubmitSale} className="btn btn-primary" style={{ float: 'right' }} disabled={cart.length === 0 || isSubmitting}>
                     {isSubmitting ? 'Оформление...' : 'Оформить продажу'}
                 </button>
             </div>
 
-            {saleSuccessData && ( <div className="confirm-modal-overlay">{/*...модальное окно...*/}</div> )}
+            {saleSuccessData && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog">
+                        <h3>Продажа №{saleSuccessData.id} успешно оформлена!</h3>
+                        <p>Итоговая сумма: <strong>{saleSuccessData.total_amount.toFixed(2)} руб.</strong></p>
+                        <div className="confirm-modal-buttons">
+                            <button onClick={() => printReceipt(saleSuccessData)} className="btn btn-secondary">
+                                Напечатать чек
+                            </button>
+                            <button onClick={resetSaleForm} className="btn btn-primary">
+                                OK (Завершить)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

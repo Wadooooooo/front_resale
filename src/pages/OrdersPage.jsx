@@ -138,31 +138,29 @@ function OrdersPage() {
     };
     
     // Обработчики действий с заказом
-    const handleReceiveOrder = (orderId) => { //
-            setOrderIdToConfirm(orderId); //
-            setIsConfirmModalOpen(true); //
+    const handleReceiveOrder = (orderId) => {
+        setOrderIdToConfirm(orderId);
+        setIsConfirmModalOpen(true);
+    }; //
+    
+        const confirmAndReceiveOrder = async () => {
+        if (!orderIdToConfirm) return;
+        try {
+            const updatedOrder = await receiveSupplierOrder(orderIdToConfirm);
+            setOrders(orders.map(order => order.id === orderIdToConfirm ? updatedOrder : order));
+            setFormMessage({ type: 'success', text: `Заказ ID ${orderIdToConfirm} успешно получен!` });
+        } catch (err) {
+            setFormMessage({ type: 'error', text: err.response?.data?.detail || 'Не удалось получить заказ.' });
+        } finally {
+            setIsConfirmModalOpen(false);
+            setOrderIdToConfirm(null);
+        }
         }; //
     
-        const confirmAndReceiveOrder = async () => { //
-            if (!orderIdToConfirm) return; //
-    
-            try { //
-                const updatedOrder = await receiveSupplierOrder(orderIdToConfirm); //
-                setOrders(orders.map(order => order.id === orderIdToConfirm ? updatedOrder : order)); //
-                setFormMessage({ type: 'success', text: `Заказ ID ${orderIdToConfirm} успешно получен!` }); //
-            } catch (err) { //
-                console.error('Ошибка при получении заказа:', err); //
-                setFormMessage({ type: 'error', text: err.response?.data?.detail || 'Не удалось получить заказ.' }); //
-            } finally { //
-                setIsConfirmModalOpen(false); //
-                setOrderIdToConfirm(null); //
-            } //
-        }; //
-    
-        const cancelReceiveOrder = () => { //
-            setIsConfirmModalOpen(false); //
-            setOrderIdToConfirm(null); //
-        }; //
+        const cancelReceiveOrder = () => {
+        setIsConfirmModalOpen(false);
+        setOrderIdToConfirm(null);
+    }; //
     
         // ДОБАВЛЕНО: Обработчики для модального окна оплаты
         const handlePayOrder = (orderId) => {
@@ -410,8 +408,60 @@ function OrdersPage() {
                     </tbody>
                 </table>
             </div>
-            {isConfirmModalOpen && ( <div className="confirm-modal-overlay">{/*...модальное окно подтверждения...*/}</div> )}
-            {isPaymentModalOpen && ( <div className="confirm-modal-overlay">{/*...модальное окно оплаты...*/}</div> )}
+            {isPaymentModalOpen && (
+                    <div className="confirm-modal-overlay">
+                        <div className="confirm-modal-dialog">
+                            <h3>Оплатить заказ поставщику №{orderIdToPay}</h3>
+                            <div className="form-section">
+                                <label>Счет оплаты:</label>
+                                <Select
+                                    options={accountOptions}
+                                    value={paymentAccount}
+                                    onChange={setPaymentAccount}
+                                    placeholder="Выберите счет..."
+                                    isClearable
+                                />
+                            </div>
+                            <div className="form-section">
+                                <label>Сумма оплаты:</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-input"
+                                    value={paymentAmount}
+                                    onChange={(e) => setPaymentAmount(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-section">
+                                <label>Примечания:</label>
+                                <textarea
+                                    className="form-input"
+                                    value={paymentNotes}
+                                    onChange={(e) => setPaymentNotes(e.target.value)}
+                                    rows="3"
+                                />
+                            </div>
+                            <div className="confirm-modal-buttons">
+                                <button onClick={confirmAndPayOrder} className="btn btn-primary">Подтвердить оплату</button>
+                                <button onClick={cancelPayOrder} className="btn btn-secondary">Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isConfirmModalOpen && (
+                    <div className="confirm-modal-overlay">
+                        <div className="confirm-modal-dialog">
+                            <h3>Подтвердите действие</h3>
+                            <p>Вы уверены, что хотите отметить этот заказ как полученный? Все товары из заказа будут оприходованы.</p>
+                            <div className="confirm-modal-buttons">
+                                <button onClick={confirmAndReceiveOrder} className="btn btn-primary">Да, получить</button>
+                                <button onClick={cancelReceiveOrder} className="btn btn-secondary">Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+            )}
         </div>
     );
 }

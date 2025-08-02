@@ -3,18 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { IMaskInput } from 'react-imask';
-import { 
-    getPhoneHistory, 
-    getAccounts, 
-    processRefund, 
-    startWarrantyRepair, 
-    finishWarrantyRepair, 
-    getReplacementPhones, 
-    processExchange 
+import {
+    getPhoneHistory,
+    getAccounts,
+    processRefund,
+    startWarrantyRepair,
+    finishWarrantyRepair,
+    getReplacementPhones,
+    processExchange
 } from '../api';
 import './OrdersPage.css';
 import './PhoneHistoryPage.css';
 import { printRepairAcceptanceDoc, printRepairFinishDoc } from '../utils/printRepairDoc';
+// 1. Убедитесь, что useParams импортирован
+import { useParams } from 'react-router-dom';
 
 // Вспомогательная функция для форматирования даты
 const formatDateTime = (isoString) => {
@@ -70,27 +72,25 @@ const ConfirmationModal = ({ title, message, onConfirm, onCancel, isSubmitting }
     </div>
 );
 
+
 function PhoneHistoryPage() {
-    // Основные состояния
-    const [serialNumber, setSerialNumber] = useState('');
+    // 2. Эта строка исправлена: теперь она получает параметр из URL
+    const { serialNumber: serialFromUrl } = useParams();
+
+    // 3. Эта строка исправлена: serialFromUrl теперь существует
+    const [serialNumber, setSerialNumber] = useState(serialFromUrl || '');
     const [history, setHistory] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Состояния для модального окна возврата
     const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
     const [accounts, setAccounts] = useState([]);
     const [refundAccountId, setRefundAccountId] = useState(null);
     const [refundNotes, setRefundNotes] = useState('');
-
-    // Состояния для модального окна обмена
     const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
     const [replacementOptions, setReplacementOptions] = useState([]);
     const [selectedReplacementId, setSelectedReplacementId] = useState('');
-
-    // Состояния для модального окна ремонта (приём)
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [acceptanceData, setAcceptanceData] = useState({
         customer_name: '',
@@ -100,33 +100,15 @@ function PhoneHistoryPage() {
         included_items: '',
         notes: ''
     });
-
-    // Состояния для модального окна ремонта (выдача)
     const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
     const [finishData, setFinishData] = useState({
         work_performed: ''
     });
-
-    // Состояние для универсального окна подтверждения
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
-    // Загрузка счетов при монтировании компонента
-    useEffect(() => {
-        const fetchAccounts = async () => {
-            try {
-                const accountsData = await getAccounts();
-                setAccounts(accountsData);
-            } catch (err) {
-                console.error("Не удалось загрузить счета", err);
-            }
-        };
-        fetchAccounts();
-    }, []);
-
-    // Поиск истории телефона
-    const handleSearch = async (e) => {
-        if (e) e.preventDefault();
-        if (!serialNumber.trim()) {
+    // Универсальная функция для поиска
+    const findHistoryBySN = async (snToSearch) => {
+        if (!snToSearch || !snToSearch.trim()) {
             setError('Введите серийный номер.');
             return;
         }
@@ -135,7 +117,7 @@ function PhoneHistoryPage() {
         setMessage('');
         setHistory(null);
         try {
-            const data = await getPhoneHistory(serialNumber.trim());
+            const data = await getPhoneHistory(snToSearch.trim());
             setHistory(data);
         } catch (err) {
             setError(err.response?.data?.detail || 'Ошибка при поиске истории.');
@@ -144,7 +126,33 @@ function PhoneHistoryPage() {
         }
     };
 
-    // Обработчики для модальных окон ремонта
+    // 4. Этот useEffect исправлен: он загружает данные при первом рендере
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const accountsData = await getAccounts();
+                setAccounts(accountsData);
+            } catch (err) {
+                console.error("Не удалось загрузить счета", err);
+            }
+        };
+        fetchInitialData();
+
+        if (serialFromUrl) {
+            findHistoryBySN(serialFromUrl);
+        }
+    }, [serialFromUrl]);
+
+
+    // Обработчик для формы поиска
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        findHistoryBySN(serialNumber);
+    };
+
+
+    // --- ВАЖНО: Остальной код вашего компонента (все функции handle...Submit и т.д.) остается здесь без изменений ---
+    // (Я его скрыл для краткости, но вы должны оставить его в своем файле)
     const handleAcceptanceInputChange = (e) => {
         const { name, value } = e.target;
         setAcceptanceData(prev => ({ ...prev, [name]: value }));
@@ -159,7 +167,7 @@ function PhoneHistoryPage() {
             setMessage('Телефон успешно принят в ремонт.');
             printRepairAcceptanceDoc(history, acceptanceData);
             setIsAcceptanceModalOpen(false);
-            await handleSearch();
+            await findHistoryBySN(serialNumber);
         } catch (err) {
             alert(err.response?.data?.detail || 'Ошибка при приеме в ремонт.');
         } finally {
@@ -181,7 +189,7 @@ function PhoneHistoryPage() {
             setMessage('Ремонт успешно завершен.');
              printRepairFinishDoc(history, finishData);
             setIsFinishModalOpen(false);
-            await handleSearch();
+            await findHistoryBySN(serialNumber);
         } catch (err) {
             alert(err.response?.data?.detail || 'Ошибка при завершении ремонта.');
         } finally {
@@ -189,11 +197,9 @@ function PhoneHistoryPage() {
         }
     };
 
-    // Обработчики для кнопок "В ремонт" / "Завершить ремонт"
     const handleStartRepair = () => setIsAcceptanceModalOpen(true);
     const handleFinishRepair = () => setIsFinishModalOpen(true);
 
-    // Обработчики для возврата денег
     const handleRefundSubmit = async (e) => {
         e.preventDefault();
         if (!refundAccountId) {
@@ -209,7 +215,7 @@ function PhoneHistoryPage() {
             setIsRefundModalOpen(false);
             setRefundAccountId(null);
             setRefundNotes('');
-            await handleSearch();
+            await findHistoryBySN(serialNumber);
         } catch (err) {
             alert(err.response?.data?.detail || 'Не удалось оформить возврат.');
         } finally {
@@ -217,7 +223,6 @@ function PhoneHistoryPage() {
         }
     };
 
-    // Обработчики для обмена
     const handleOpenExchangeModal = async () => {
         try {
             const replacements = await getReplacementPhones(history.id);
@@ -241,7 +246,7 @@ function PhoneHistoryPage() {
             setMessage('Обмен успешно выполнен!');
             setIsExchangeModalOpen(false);
             setSelectedReplacementId('');
-            await handleSearch();
+            await findHistoryBySN(serialNumber);
         } catch (err) {
             alert(err.response?.data?.detail || 'Не удалось выполнить обмен.');
         } finally {
@@ -256,12 +261,12 @@ function PhoneHistoryPage() {
             <h1>История телефона</h1>
             <div className="order-page-container">
                 <h2>Поиск по серийному номеру</h2>
-                <form onSubmit={handleSearch} className="search-form-container">
-                    <input 
-                        type="text" 
-                        value={serialNumber} 
-                        onChange={(e) => setSerialNumber(e.target.value)} 
-                        placeholder="Введите S/N..." 
+                <form onSubmit={handleSearchSubmit} className="search-form-container">
+                    <input
+                        type="text"
+                        value={serialNumber}
+                        onChange={(e) => setSerialNumber(e.target.value)}
+                        placeholder="Введите S/N..."
                         className="form-input"
                     />
                     <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -273,7 +278,7 @@ function PhoneHistoryPage() {
             </div>
 
             {history && (
-                <div className="order-page-container">
+                 <div className="order-page-container">
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                         <div>
                             <h2>{history.model?.name || 'Телефон'} (ID: {history.id})</h2>
@@ -330,7 +335,6 @@ function PhoneHistoryPage() {
                                     <IMaskInput
                                         mask="+7 (000) 000-00-00"
                                         value={acceptanceData.customer_phone}
-                                        // У новой библиотеки другой обработчик, поэтому мы "оборачиваем" наш
                                         onAccept={(value) => handleAcceptanceInputChange({ target: { name: 'customer_phone', value: value } })}
                                         name="customer_phone"
                                         className="form-input"

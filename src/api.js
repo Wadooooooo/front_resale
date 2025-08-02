@@ -40,14 +40,13 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
     response => response,
     error => {
+        // ДОБАВЛЕННЫЕ СТРОКИ
+        console.error('!!! AXIOS INTERCEPTOR ПОЙМАЛ ОШИБКУ:', error.response);
+        alert(`Сетевая ошибка: ${error.response?.status || 'Нет ответа от сервера'}. Подробности в консоли (F12).`);
+        // КОНЕЦ ДОБАВЛЕННЫХ СТРОК
+
         if (error.response && error.response.status === 401) {
-            // Токен недействителен или истек. Очищаем его и перенаправляем на логин.
             setAuthToken(null);
-            // window.location.href = '/login'; // Можно использовать, но лучше через React Router
-            // Если вы используете useNavigate из react-router-dom, вам нужно
-            // перенаправлять на стороне компонента, который вызывает API.
-            // Здесь мы просто выбрасываем ошибку, чтобы вызывающий код мог ее поймать
-            // и решить, куда навигировать.
         }
         return Promise.reject(error);
     }
