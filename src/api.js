@@ -492,3 +492,20 @@ export const getMySales = async (startDate, endDate) => {
     const response = await axios.get(`${API_BASE_URL}/sales/my-sales`, { params });
     return response.data;
 };
+
+// --- API для Заметок ---
+export const getNotes = async (showAll = false) => {
+    const response = await axios.get(`${API_BASE_URL}/notes`, { params: { show_all: showAll } });
+    return response.data;
+};
+
+export const createNote = async (content) => {
+    const response = await axios.post(`${API_BASE_URL}/notes`, { content });
+    return response.data;
+};
+
+export const updateNoteStatus = async (noteId, isCompleted) => {
+    const response = await axios.put(`${API_BASE_URL}/notes/${noteId}`, { is_completed: isCompleted });
+    return response.data;
+};
+

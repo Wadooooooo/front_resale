@@ -1,0 +1,77 @@
+/* src/pages/DashboardPage.css */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Левая колонка шире правой */
+    gap: 2rem;
+    align-items: start;
+}
+
+.dashboard-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Стили для блока заметок */
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.notes-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.add-note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.add-note-form button {
+    align-self: flex-end;
+}
+
+.notes-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.note-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.note-item:last-child {
+    border-bottom: none;
+}
+
+.note-item.completed p {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.note-item input[type="checkbox"] {
+    margin-top: 5px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.note-content p {
+    margin: 0 0 0.5rem 0;
+    word-break: break-word;
+}
+
+.note-content small {
+    color: #6c757d;
+}
