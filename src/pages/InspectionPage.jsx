@@ -1,54 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    getPhonesForInspection, 
+import {
+    getPhonesForInspection,
     getPhonesForBatteryTest,
-    getChecklistItems, 
+    getChecklistItems,
     submitInitialInspection,
     addBatteryTest,
-    searchModelNumbers
+    searchModelNumbers,
+    getPhonesForPackaging,
+    submitPackaging
 } from '../api';
-import './OrdersPage.css'; // Используем те же стили
+import './OrdersPage.css';
 
 function InspectionPage() {
-    // Два списка телефонов для двух этапов
     const [awaitingChecklist, setAwaitingChecklist] = useState([]);
     const [awaitingBatteryTest, setAwaitingBatteryTest] = useState([]);
+    const [awaitingPackaging, setAwaitingPackaging] = useState([]);
+    const [selectedForPackaging, setSelectedForPackaging] = useState([]);
     
     const [checklist, setChecklist] = useState([]);
     const [selectedPhone, setSelectedPhone] = useState(null);
-    const [currentInspection, setCurrentInspection] = useState(null); // Хранит ID инспекции для второго этапа
+    const [currentInspection, setCurrentInspection] = useState(null);
     
-    // Состояния для форм
     const [serialNumber, setSerialNumber] = useState('');
     const [modelNumber, setModelNumber] = useState('');
     const [modelNumberSuggestions, setModelNumberSuggestions] = useState([]);
-    const [results, setResults] = useState({}); // для чек-листа
+    const [results, setResults] = useState({});
     const [batteryTest, setBatteryTest] = useState({
-        start_time: '',
-        start_battery_level: '',
-        end_time: '',
-        end_battery_level: ''
+        start_time: '', start_battery_level: '', end_time: '', end_battery_level: ''
     });
 
-    // Состояния для UI
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [drainRate, setDrainRate] = useState(null);
 
-    // --- 1. ЗАГРУЗКА ДАННЫХ ---
     const loadData = async () => {
         try {
             setLoading(true);
-            // Загружаем сразу всё: оба списка телефонов и чек-лист
-            const [checklistPhones, batteryPhones, checklistData] = await Promise.all([
+            const [checklistPhones, batteryPhones, checklistData, packagingPhones] = await Promise.all([
                 getPhonesForInspection(),
                 getPhonesForBatteryTest(),
-                getChecklistItems()
+                getChecklistItems(),
+                getPhonesForPackaging()
             ]);
             setAwaitingChecklist(checklistPhones);
             setAwaitingBatteryTest(batteryPhones);
             setChecklist(checklistData);
+            setAwaitingPackaging(packagingPhones);
         } catch (err) {
             setError('Не удалось загрузить данные для инспекции.');
         } finally {
@@ -205,14 +203,41 @@ function InspectionPage() {
     };
 
     // --- 4. JSX-РАЗМЕТКА ---
+    const handlePackagingCheckboxChange = (phoneId) => {
+        setSelectedForPackaging(prev =>
+            prev.includes(phoneId)
+                ? prev.filter(id => id !== phoneId)
+                : [...prev, phoneId]
+        );
+    };
+
+    const handlePackageSubmit = async () => {
+        if (selectedForPackaging.length === 0) {
+            alert('Выберите хотя бы один телефон.');
+            return;
+        }
+        setMessage('Обновление статусов...');
+        try {
+            await submitPackaging(selectedForPackaging);
+            setMessage(`${selectedForPackaging.length} телефон(ов) отмечены как упакованные.`);
+            setSelectedForPackaging([]);
+            await loadData();
+        } catch (err) {
+            setError('Ошибка при обновлении статусов.');
+            setMessage('');
+        }
+    };
+    
+
     if (loading) return <h2>Загрузка...</h2>;
 
     return (
         <div>
             <h1>Инспекция Телефонов</h1>
-            <div style={{ display: 'flex', gap: '2rem' }}>
-                {/* Левая колонка со списками */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                
+                {/* Левая колонка */}
+                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div className="order-page-container">
                         <h2>Ожидают проверки ({awaitingChecklist.length})</h2>
                         <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -225,6 +250,40 @@ function InspectionPage() {
                             ))}
                         </ul>
                     </div>
+
+                    {/* --- БЛОК "НА УПАКОВКЕ" ТЕПЕРЬ ЗДЕСЬ --- */}
+                    <div className="order-page-container">
+                        <h2>На упаковке ({awaitingPackaging.length})</h2>
+                        {awaitingPackaging.map(phone => (
+                            <div key={phone.id} className="packaging-item">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedForPackaging.includes(phone.id)}
+                                    onChange={() => handlePackagingCheckboxChange(phone.id)}
+                                    id={`pack-${phone.id}`}
+                                />
+                                <label htmlFor={`pack-${phone.id}`}>
+                                    ID: {phone.id} - <strong>{phone.model?.name || 'Модель не указана'}</strong>
+                                    <br />
+                                    <small>S/N: {phone.serial_number || 'Не указан'}</small>
+                                </label>
+                            </div>
+                        ))}
+                        {awaitingPackaging.length > 0 && (
+                            <button
+                                onClick={handlePackageSubmit}
+                                className="btn btn-primary"
+                                disabled={selectedForPackaging.length === 0}
+                            >
+                                Упаковано ({selectedForPackaging.length})
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Центральная колонка */}
+                <div style={{ flex: 2 }}>
+                    {/* --- БЛОК "НА ТЕСТЕ АКБ" ТЕПЕРЬ ЗДЕСЬ --- */}
                     <div className="order-page-container">
                         <h2>На тесте аккумулятора ({awaitingBatteryTest.length})</h2>
                         <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -238,6 +297,7 @@ function InspectionPage() {
                         </ul>
                     </div>
                 </div>
+
 
                 {/* Правая колонка с формой */}
                 <div style={{ flex: 2 }}>

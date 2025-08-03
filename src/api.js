@@ -450,3 +450,13 @@ export const getPhonesInStock = async () => {
     return response.data;
 };
 
+export const getPhonesForPackaging = async () => {
+    const response = await axios.get(`${API_BASE_URL}/phones/ready-for-packaging`);
+    return response.data;
+};
+
+export const submitPackaging = async (phoneIds) => {
+    const response = await axios.post(`${API_BASE_URL}/phones/package`, phoneIds);
+    return response.data;
+};
+

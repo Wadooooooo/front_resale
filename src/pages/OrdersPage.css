@@ -394,3 +394,31 @@ h3 {
 .search-form-container .btn {
   margin-top: 0; /* Убираем стандартный верхний отступ у кнопки */
 }
+
+.packaging-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.packaging-item:last-child {
+  border-bottom: none;
+}
+
+.packaging-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.packaging-item label {
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.packaging-item small {
+  color: #6c757d;
+}
