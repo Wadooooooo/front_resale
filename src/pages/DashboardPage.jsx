@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getDashboardSalesSummary, getDashboardReadyForSale } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 
@@ -64,21 +64,27 @@ function DashboardPage() {
                     </div>
                 )}
             </div>
-
             <div className="order-page-container">
                 <h2>Быстрые действия</h2>
-                <form onSubmit={handleSearch} className="search-form-container">
-                    <input
-                        type="text"
-                        value={serialNumber}
-                        onChange={(e) => setSerialNumber(e.target.value)}
-                        placeholder="Введите S/N для возврата, обмена или ремонта..."
-                        className="form-input"
-                        style={{width: '450px'}}
-                    />
-                    <button type="submit" className="btn btn-primary">Найти</button>
-                </form>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {/* VVV 2. ЗАМЕНИТЕ ВАШУ ФОРМУ НА ЭТОТ БЛОК VVV */}
+                    <form onSubmit={handleSearch} className="search-form-container" style={{ flexGrow: 1 }}>
+                        <input
+                            type="text"
+                            value={serialNumber}
+                            onChange={(e) => setSerialNumber(e.target.value)}
+                            placeholder="Поиск по S/N для возврата или ремонта..."
+                            className="form-input"
+                        />
+                        <button type="submit" className="btn btn-primary">Найти</button>
+                    </form>
+                    <Link to="/stock" className="btn btn-secondary" style={{ marginTop: 0 }}>
+                        🗂️ Открыть каталог
+                    </Link>
+                </div>
             </div>
+
+            
 
             <div className="order-page-container">
                 <h2>Недавно на складе</h2>

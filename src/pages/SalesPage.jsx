@@ -52,35 +52,30 @@ function SalesPage() {
     };
 
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
-                // Теперь мы всегда загружаем счета вместе с остальными данными
-                const [
-                    productsData,
-                    customersData,
-                    accountsData
-                ] = await Promise.all([
-                    getProductsForSale(),
-                    getCustomers(),
-                    getAccounts()
-                ]);
+        loadData();
+    }, []);
 
-                setProducts(productsData);
-                setCustomers(customersData);
-                setAccounts(accountsData);
+    useEffect(() => {
+        let defaultAccount = null;
 
-            } catch (err) {
-                setError('Не удалось загрузить данные для продажи.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (hasPermission) { // Запускаем, только когда функция hasPermission готова
-            loadData();
+        // Ищем нужный счет в зависимости от метода оплаты
+        if (paymentMethod.value === 'НАЛИЧНЫЕ') {
+            // Ищем счет "Наличные"
+            defaultAccount = accounts.find(acc => acc.name.toLowerCase() === 'наличные');
+        } else if (paymentMethod.value === 'КАРТА') {
+            // Ищем счет "Расчетный счет"
+            defaultAccount = accounts.find(acc => acc.name.toLowerCase() === 'расчетный счет');
         }
-    }, [hasPermission]);
+
+        // Если нашли подходящий счет по умолчанию, устанавливаем его
+        if (defaultAccount) {
+            setSelectedAccountId({ value: defaultAccount.id, label: defaultAccount.name });
+        } else {
+            // Для "Перевода" или если счет не найден, сбрасываем выбор,
+            // чтобы пользователь выбрал его вручную.
+            setSelectedAccountId(null);
+        }
+    }, [paymentMethod, accounts]);
 
     // Опции для выпадающих списков
     const productOptions = products
@@ -266,9 +261,16 @@ function SalesPage() {
                     <div className="form-section"><label>Клиент</label><Select options={customerOptions} value={selectedCustomerId} onChange={setSelectedCustomerId} placeholder="Розничный покупатель" isClearable /></div>
                     <div className="form-section"><label>Метод оплаты</label><Select options={paymentMethodOptions} value={paymentMethod} onChange={setPaymentMethod} /></div>
                     {paymentMethod.value === 'ПЕРЕВОД' ? (
-                        <div className="form-section"><label>Счет зачисления</label><Select options={transferAccountOptions} value={selectedAccountId} onChange={setSelectedAccountId} placeholder="Выберите счет (карту)..." /></div>
+                        <div className="form-section">
+                            <label>Счет зачисления</label>
+                            <Select options={transferAccountOptions} value={selectedAccountId} onChange={setSelectedAccountId} placeholder="Выберите счет (карту)..." />
+                        </div>
                     ) : (
-                        <div className="form-section"><label>Счет зачисления</label><input type="text" className="form-input" value={selectedAccountId ? selectedAccountId.label : 'Автоматически'} disabled /></div>
+                        <div className="form-section">
+                            <label>Счет зачисления</label>
+                            {/* ИЗМЕНЕНИЕ ЗДЕСЬ: Теперь input показывает label из автоматически выбранного счета */}
+                            <input type="text" className="form-input" value={selectedAccountId ? selectedAccountId.label : 'Автоматически'} disabled />
+                        </div>
                     )}
                     <div className="form-section"><label>Скидка (руб.)</label><input type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} className="form-input" placeholder="0" /></div>
                 </div>

@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { loginUser as apiLogin, setAuthToken, getAuthToken, getMe } from '../api';
 import { useNavigate } from 'react-router-dom';
 
@@ -53,12 +53,12 @@ export const AuthProvider = ({ children }) => {
         navigate('/login');
     };
 
-    const hasPermission = (permissionCode) => {
+    const hasPermission = useCallback((permissionCode) => {
         if (!user || !user.role || !user.role.permissions) {
             return false;
         }
         return user.role.permissions.some(p => p.code === permissionCode);
-    };
+    }, [user]);
 
     const value = { user, token, loading, login, logout, hasPermission };
 

@@ -22,6 +22,7 @@ import PhoneHistoryPage from './pages/PhoneHistoryPage.jsx';
 import ReturnsPage from './pages/ReturnsPage.jsx';
 import EmployeesPage from './pages/EmployeesPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import StockPage from './pages/StockPage.jsx';
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
 function MainLayout() {
@@ -34,6 +35,7 @@ function MainLayout() {
         <ul className="nav-list">
             {/* Ссылки, которые будут показаны в зависимости от прав доступа */}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
+            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/stock" className="nav-link">Каталог</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
@@ -58,6 +60,7 @@ function MainLayout() {
         {/* Здесь будут отображаться компоненты страниц */}
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/stock" element={<StockPage />} />
           <Route path="/phones" element={<PhonesPage />} />
           <Route path="/phone-history/:serialNumber" element={<PhoneHistoryPage />} />
           <Route path="/phone-history/" element={<PhoneHistoryPage />} />

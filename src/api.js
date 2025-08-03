@@ -445,3 +445,8 @@ export const getDashboardReadyForSale = async () => {
     return response.data;
 };
 
+export const getPhonesInStock = async () => {
+    const response = await axios.get(`${API_BASE_URL}/phones/in-stock`);
+    return response.data;
+};
+
