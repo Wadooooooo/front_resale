@@ -509,3 +509,13 @@ export const updateNoteStatus = async (noteId, isCompleted) => {
     return response.data;
 };
 
+export const getAllPhonesInStockDetailed = async () => {
+    const response = await axios.get(`${API_BASE_URL}/phones/stock-details`);
+    return response.data;
+};
+
+export const movePhoneLocation = async (phoneId, newLocation) => {
+    const response = await axios.put(`${API_BASE_URL}/warehouse/move-phone/${phoneId}`, { new_location: newLocation });
+    return response.data;
+};
+

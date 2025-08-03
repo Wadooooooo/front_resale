@@ -42,7 +42,7 @@ function MainLayout() {
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/my-sales" className="nav-link">Мои продажи</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
-            {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
+            {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) && <li className="nav-item"><NavLink to="/orders" className="nav-link">Заказы</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/returns" className="nav-link">Брак/Возвраты</NavLink></li>}
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/phones" className="nav-link">Телефоны</NavLink></li>}
@@ -54,7 +54,7 @@ function MainLayout() {
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Финансы</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
-            <li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>
+            {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
         </ul>
         <div className="logout-container">
             <button onClick={logout} className="btn btn-secondary" style={{width: '100%'}}>Выйти</button>

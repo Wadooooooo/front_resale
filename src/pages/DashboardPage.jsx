@@ -11,6 +11,7 @@ import {
 } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 import './DashboardPage.css';
+import { useAuth } from '../context/AuthContext';
 
 
 // Карточка для отображения статистики
@@ -32,12 +33,13 @@ function DashboardPage() {
     const [notes, setNotes] = useState([]);
     const [newNoteContent, setNewNoteContent] = useState('');
     const [showAllNotes, setShowAllNotes] = useState(false);
+    const { user, hasPermission } = useAuth();
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [summaryData, readyForSaleData] = await Promise.all([
+                const [summaryData, readyForSaleData, notesData] = await Promise.all([
                     getDashboardSalesSummary(),
                     getDashboardReadyForSale(),
                     getNotes(showAllNotes)
@@ -168,24 +170,31 @@ function DashboardPage() {
                             <button type="submit" className="btn btn-primary">Добавить</button>
                         </form>
                         <div className="notes-list">
-                            {notes.map(note => (
-                                <div key={note.id} className={`note-item ${note.is_completed ? 'completed' : ''}`}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={note.is_completed} 
-                                        onChange={() => handleToggleNote(note.id, note.is_completed)}
-                                    />
-                                    <div className="note-content">
-                                        <p>{note.content}</p>
-                                        <small>
-                                            {note.created_by.name || note.created_by.username} - {new Date(note.created_at).toLocaleString('ru-RU')}
-                                            {note.is_completed && note.completed_by && (
-                                                <span> | Выполнил: {note.completed_by.name || note.completed_by.username}</span>
-                                            )}
-                                        </small>
+                            {notes.map(note => {
+                                // Определяем, может ли текущий пользователь изменить статус этой заметки
+                                const canToggle = !note.is_completed ||
+                                                (note.completed_by && user && user.id === note.completed_by.id) ||
+                                                hasPermission('manage_inventory');
+                                return (
+                                    <div key={note.id} className={`note-item ${note.is_completed ? 'completed' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={note.is_completed}
+                                            onChange={() => handleToggleNote(note.id, note.is_completed)}
+                                            disabled={!canToggle} // <-- ДОБАВЛЕНО ЭТО СВОЙСТВО
+                                        />
+                                        <div className="note-content">
+                                            <p>{note.content}</p>
+                                            <small>
+                                                {note.created_by.name || note.created_by.username} - {new Date(note.created_at).toLocaleString('ru-RU')}
+                                                {note.is_completed && note.completed_by && (
+                                                    <span> | Выполнил: {note.completed_by.name || note.completed_by.username}</span>
+                                                )}
+                                            </small>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
