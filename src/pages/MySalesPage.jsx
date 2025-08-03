@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getMySales } from '../api';
 import './OrdersPage.css';
+import { useSearchParams } from 'react-router-dom';
 
 const formatDateTime = (isoString) => {
     if (!isoString) return '';
@@ -20,8 +21,20 @@ function MySalesPage() {
     const [error, setError] = useState('');
 
     // Состояния для фильтра по дате
-    const [startDate, setStartDate] = useState(toISODateString(new Date(new Date().setDate(1)))); // Первый день текущего месяца
-    const [endDate, setEndDate] = useState(toISODateString(new Date())); // Сегодня
+    const [searchParams] = useSearchParams();
+    const period = searchParams.get('period');
+
+    const getInitialStartDate = () => {
+        // Если в URL есть параметр period=today, ставим сегодняшнюю дату
+        if (period === 'today') {
+            return toISODateString(new Date());
+        }
+        // В противном случае, по умолчанию ставим первый день месяца
+        return toISODateString(new Date(new Date().setDate(1)));
+    };
+
+    const [startDate, setStartDate] = useState(getInitialStartDate());
+    const [endDate, setEndDate] = useState(toISODateString(new Date()));
 
     const fetchSales = async () => {
         try {
@@ -47,7 +60,7 @@ function MySalesPage() {
 
     return (
         <div>
-            <h1>Мои продажи</h1>
+            <h1>Мои продажи ({sales.length})</h1>
 
             <div className="order-page-container">
                 <form onSubmit={handleFilterSubmit}>

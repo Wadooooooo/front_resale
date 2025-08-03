@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { getDashboardSalesSummary, getDashboardReadyForSale } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 
+
 // Карточка для отображения статистики
 const StatCard = ({ title, value, isCurrency = true }) => (
     <div className="balance-card">
@@ -58,7 +59,9 @@ function DashboardPage() {
                 <h2>Сводка за смену</h2>
                 {summary && (
                     <div className="balances-grid">
-                        <StatCard title="Продаж за смену" value={summary.sales_count} isCurrency={false} />
+                        <Link to="/my-sales?period=today" style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <StatCard title="Продаж за смену" value={summary.sales_count} isCurrency={false} />
+                        </Link>
                         <StatCard title="Наличными в кассе" value={summary.cash_in_register} />
                         <StatCard title="Общая выручка" value={summary.total_revenue} />
                     </div>
