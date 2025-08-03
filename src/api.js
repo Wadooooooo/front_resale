@@ -460,3 +460,35 @@ export const submitPackaging = async (phoneIds) => {
     return response.data;
 };
 
+export const createCustomer = async (customerData) => {
+    const response = await axios.post(`${API_BASE_URL}/customers`, customerData);
+    return response.data;
+};
+
+export const getTrafficSources = async () => {
+    const response = await axios.get(`${API_BASE_URL}/traffic-sources`);
+    return response.data;
+};
+
+export const createTrafficSource = async (sourceData) => {
+    const response = await axios.post(`${API_BASE_URL}/traffic-sources`, sourceData);
+    return response.data;
+};
+
+export const updateTrafficSource = async (sourceId, sourceData) => {
+    const response = await axios.put(`${API_BASE_URL}/traffic-sources/${sourceId}`, sourceData);
+    return response.data;
+};
+
+export const deleteTrafficSource = async (sourceId) => {
+    await axios.delete(`${API_BASE_URL}/traffic-sources/${sourceId}`);
+};
+
+export const getMySales = async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const response = await axios.get(`${API_BASE_URL}/sales/my-sales`, { params });
+    return response.data;
+};

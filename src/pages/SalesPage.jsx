@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { getProductsForSale, getCustomers, createSale, getAccounts, getCompatibleAccessories, getPhoneById } from '../api';
+import { getProductsForSale, getCustomers, createSale, getAccounts, getCompatibleAccessories, getPhoneById, createCustomer, getTrafficSources } from '../api';
 import { printReceipt } from '../utils/printReceipt';
 import './OrdersPage.css';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,95 @@ const paymentMethodOptions = [
     { value: 'КАРТА', label: 'Карта' },
     { value: 'ПЕРЕВОД', label: 'Перевод' },
 ];
+
+const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, existingCustomers }) => {
+    const [name, setName] = useState('');
+    const [number, setNumber] = useState('');
+    const [sourceId, setSourceId] = useState('');
+    const [referrerId, setReferrerId] = useState(null); // Для выбора "кто привел"
+    const [trafficSources, setTrafficSources] = useState([]);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            // Загружаем источники трафика при открытии окна
+            const fetchSources = async () => {
+                try {
+                    const sources = await getTrafficSources();
+                    setTrafficSources(sources);
+                } catch (err) {
+                    console.error("Не удалось загрузить источники трафика", err);
+                }
+            };
+            fetchSources();
+            // Сбрасываем поля при каждом открытии
+            setName(''); setNumber(''); setSourceId(''); setReferrerId(null); setError('');
+        }
+    }, [isOpen]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!name) {
+            setError('Имя обязательно для заполнения.');
+            return;
+        }
+        try {
+            const customerData = {
+                name,
+                number,
+                source_id: sourceId ? parseInt(sourceId) : null,
+                referrer_id: referrerId ? referrerId.value : null
+            };
+            const newCustomer = await createCustomer(customerData);
+            onCustomerCreated(newCustomer);
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Ошибка при создании клиента.');
+        }
+    };
+
+    if (!isOpen) return null;
+
+    // Опции для выбора того, кто привел клиента
+    const customerOptions = existingCustomers.map(c => ({ value: c.id, label: `${c.name} (${c.number || 'б/н'})` }));
+
+    return (
+        <div className="confirm-modal-overlay">
+            <form onSubmit={handleSubmit} className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '500px' }}>
+                <h3>Новый покупатель</h3>
+                <div className="details-grid">
+                    <div className="form-section">
+                        <label>Имя*</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} className="form-input" required />
+                    </div>
+                    <div className="form-section">
+                        <label>Номер телефона</label>
+                        <input type="text" value={number} onChange={e => setNumber(e.target.value)} className="form-input" />
+                    </div>
+                </div>
+                <div className="form-section">
+                    <label>Откуда узнал?</label>
+                    <select value={sourceId} onChange={e => setSourceId(e.target.value)} className="form-select">
+                        <option value="">-- Выберите источник --</option>
+                        {trafficSources.map(source => (
+                            <option key={source.id} value={source.id}>{source.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="form-section">
+                    <label>Кто привел? (если по рекомендации)</label>
+                    <Select options={customerOptions} value={referrerId} onChange={setReferrerId} isClearable placeholder="Выберите клиента..."/>
+                </div>
+                {error && <p className="form-message error">{error}</p>}
+                <div className="confirm-modal-buttons">
+                    <button type="submit" className="btn btn-primary">Сохранить</button>
+                    <button type="button" onClick={onClose} className="btn btn-secondary">Отмена</button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 
 function SalesPage() {
     // Состояния (без изменений)
@@ -30,6 +119,7 @@ function SalesPage() {
     const [discount, setDiscount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [saleSuccessData, setSaleSuccessData] = useState(null);
+    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const { hasPermission } = useAuth();
 
     // Загрузка данных (без изменений)
@@ -154,6 +244,19 @@ function SalesPage() {
         setSaleSuccessData(null);
         loadData();
     };
+
+    const handleCustomerCreated = (newCustomer) => {
+        // 1. Закрываем модальное окно
+        setIsCustomerModalOpen(false);
+
+        setCustomers(prev => [...prev, newCustomer]);
+
+        setSelectedCustomerId({ 
+            value: newCustomer.id, 
+            label: `${newCustomer.name || 'Имя не указано'} (${newCustomer.number || 'Номер не указан'})` 
+        });
+    };
+
     const handleSubmitSale = async () => {
         if (!selectedAccountId) {
             setError('Пожалуйста, выберите счет для зачисления оплаты.');
@@ -188,6 +291,7 @@ function SalesPage() {
             setIsSubmitting(false);
         }
     };
+    
     const subtotal = cart.reduce((total, item) => total + ((item.isGift ? 0 : parseFloat(item.price)) * item.quantity), 0);
     const totalAmount = subtotal - (parseFloat(discount) || 0);
 
@@ -195,6 +299,12 @@ function SalesPage() {
 
     return (
         <div>
+            <NewCustomerModal
+                isOpen={isCustomerModalOpen}
+                onClose={() => setIsCustomerModalOpen(false)}
+                onCustomerCreated={handleCustomerCreated}
+                existingCustomers={customers}
+            />
             <h1>Продажа</h1>
             <div className="order-page-container">
                 <h2>1. Добавьте товары в чек</h2>
@@ -210,7 +320,6 @@ function SalesPage() {
                             <th style={{ width: '100px' }}>Кол-во</th>
                             <th style={{ width: '120px' }}>Цена</th>
                             <th style={{ width: '120px' }}>Сумма</th>
-                            {hasPhoneInCart && <th style={{ width: '100px' }}>Подарок</th>}
                             <th style={{ width: '50px' }}></th>
                         </tr>
                     </thead>
@@ -221,14 +330,33 @@ function SalesPage() {
                         ) : (
                             cart.map(item => (
                                 <tr key={item.warehouse_id}>
-                                    <td>{item.name} {item.serial_number && `(S/N: ${item.serial_number})`}</td>
+                                    <td>
+                                        {item.name} {item.serial_number && `(S/N: ${item.serial_number})`}
+
+                                        {/* Новая логика для чекбокса "В подарок" */}
+                                        {item.product_type === 'Аксессуар' && hasPhoneInCart && (
+                                            <span style={{ marginLeft: '10px', color: '#6c757d', whiteSpace: 'nowrap' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    id={`gift-${item.warehouse_id}`}
+                                                    checked={item.isGift}
+                                                    onChange={() => handleToggleGift(item.warehouse_id)}
+                                                    style={{ marginRight: '5px', cursor: 'pointer', verticalAlign: 'middle' }}
+                                                />
+                                                <label 
+                                                    htmlFor={`gift-${item.warehouse_id}`} 
+                                                    style={{ cursor: 'pointer', verticalAlign: 'middle' }}
+                                                >
+                                                    В подарок
+                                                </label>
+                                            </span>
+                                        )}
+                                    </td>
                                     <td>
                                         <input type="number" className="form-input form-input-compact" value={item.quantity} onChange={(e) => handleQuantityChange(item.warehouse_id, e.target.value)} disabled={item.product_type === "Телефон"} />
                                     </td>
                                     <td>{item.isGift ? '0.00' : parseFloat(item.price).toFixed(2)} руб.</td>
                                     <td>{item.isGift ? '0.00' : (parseFloat(item.price) * item.quantity).toFixed(2)} руб.</td>
-                                    {/* ИЗМЕНЕНИЕ 4: Ячейка с чекбоксом отображается только при наличии телефона */}
-                                    {hasPhoneInCart && <td><input type="checkbox" checked={item.isGift} onChange={() => handleToggleGift(item.warehouse_id)} /></td>}
                                     <td><button onClick={() => handleRemoveFromCart(item.warehouse_id)} className="btn btn-danger btn-compact">X</button></td>
                                 </tr>
                             ))
@@ -243,7 +371,7 @@ function SalesPage() {
                     <div key={acc.id} className="recommended-item">
                         <span>{acc.name} ({acc.current_price} руб.)</span>
                         <button 
-                            onClick={() => handleAddRecommendedToCart(acc)} 
+                            onClick={() => addRecommendedToCart(acc)} 
                             className="btn btn-secondary btn-compact"
                         >
                             Добавить
@@ -258,7 +386,18 @@ function SalesPage() {
             <div className="order-page-container">
                 <h2>2. Укажите детали продажи</h2>
                 <div className="details-grid">
-                    <div className="form-section"><label>Клиент</label><Select options={customerOptions} value={selectedCustomerId} onChange={setSelectedCustomerId} placeholder="Розничный покупатель" isClearable /></div>
+                    <div className="form-section"><label>Клиент</label><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Select 
+                                options={customerOptions} 
+                                value={selectedCustomerId} 
+                                onChange={setSelectedCustomerId} 
+                                placeholder="Розничный покупатель"
+                                isClearable 
+                                styles={{ container: (base) => ({ ...base, flexGrow: 1 }) }}
+                            />
+                            <button onClick={() => setIsCustomerModalOpen(true)} className="btn btn-secondary" style={{ margin: 0, padding: '10px 15px' }}>+</button>
+                        </div>
+                    </div>
                     <div className="form-section"><label>Метод оплаты</label><Select options={paymentMethodOptions} value={paymentMethod} onChange={setPaymentMethod} /></div>
                     {paymentMethod.value === 'ПЕРЕВОД' ? (
                         <div className="form-section">

@@ -1,5 +1,6 @@
 // src/App.jsx
 
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
@@ -23,6 +24,8 @@ import ReturnsPage from './pages/ReturnsPage.jsx';
 import EmployeesPage from './pages/EmployeesPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StockPage from './pages/StockPage.jsx';
+import TrafficSourcesPage from './pages/TrafficSourcesPage.jsx';
+import MySalesPage from './pages/MySalesPage.jsx';  
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
 function MainLayout() {
@@ -37,6 +40,7 @@ function MainLayout() {
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/stock" className="nav-link">Каталог</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
+            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/my-sales" className="nav-link">Мои продажи</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) && <li className="nav-item"><NavLink to="/orders" className="nav-link">Заказы</NavLink></li>}
@@ -45,6 +49,7 @@ function MainLayout() {
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/accessories" className="nav-link">Аксессуары</NavLink></li>}
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/suppliers" className="nav-link">Поставщики</NavLink></li>}
             {hasPermission('manage_inventory') && <li className="nav-item"><NavLink to="/compatibility" className="nav-link">Совместимость</NavLink></li>}
+            {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/traffic-sources" className="nav-link">Источники</NavLink></li>}
             {hasPermission('manage_pricing') && <li className="nav-item"><NavLink to="/pricing" className="nav-link">Цены</NavLink></li>}
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Финансы</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
@@ -71,7 +76,9 @@ function MainLayout() {
           <Route path="/warehouse" element={<WarehousePage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
           <Route path="/compatibility" element={<AccessoryCompatibilityPage />} />
+          <Route path="/traffic-sources" element={<TrafficSourcesPage />} />
           <Route path="/sales" element={<SalesPage />} />
+          <Route path="/my-sales" element={<MySalesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/cashflow" element={<CashFlowPage />} />
           <Route path="/reports" element={<ReportsPage />} />
