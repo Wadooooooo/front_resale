@@ -1,105 +1,244 @@
-import React, { useState, useEffect } from 'react';
-import { getPhones, getStorageOptions, getColorOptions } from '../api';
+// src/pages/PhonesPage.jsx
+
+// ... (импорты и другие компоненты остаются без изменений) ...
+import React, { useState, useEffect, useMemo } from 'react';
+import { getPhones, getModelColorCombos, updateImageForModelColor } from '../api';
 import { useNavigate } from 'react-router-dom';
-import './OrdersPage.css'; // Импортируем общие стили
+import './OrdersPage.css';
+import './AccessoriesPage.css';
 
-function PhonesPage() {
-  const [phones, setPhones] = useState([]);
-  const [storageOptions, setStorageOptions] = useState([]);
-  const [colorOptions, setColorOptions] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+const EditModelModal = ({ model, onClose, onSave }) => {
+    const [imageUrl, setImageUrl] = useState(model.image_url || '');
 
-  useEffect(() => {
-    const fetchPhonesData = async () => {
-      try {
-        const [phonesData, storageData, colorData] = await Promise.all([
-          getPhones(),
-          getStorageOptions(),
-          getColorOptions()
-        ]);
-
-        // Сортируем телефоны по ID в обратном порядке, чтобы новые были сверху
-        phonesData.sort((a, b) => b.id - a.id);
-        setPhones(phonesData);
-        setStorageOptions(storageData);
-        setColorOptions(colorData);
-
-      } catch (err) {
-        console.error('Ошибка при загрузке телефонов:', err);
-        setError('Не удалось загрузить данные с сервера.');
-        if (err.response?.status === 401) {
-          navigate('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        onSave({ 
+            model_name_id: model.model_name_id,
+            color_id: model.color_id,
+            image_url: imageUrl 
+        });
     };
 
-    fetchPhonesData();
-  }, [navigate]);
+    return (
+        <div className="confirm-modal-overlay">
+            <div className="confirm-modal-dialog" style={{ textAlign: 'left' }}>
+                <h3>Редактировать фото для модели</h3>
+                <p><strong>{model.model_name} ({model.color_name})</strong></p>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-section">
+                        <label>Ссылка на фото (URL)</label>
+                        <input
+                            type="text"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            className="form-input"
+                            placeholder="https://example.com/image.jpg"
+                        />
+                    </div>
+                    <div className="confirm-modal-buttons">
+                        <button type="submit" className="btn btn-primary">Сохранить</button>
+                        <button type="button" onClick={onClose} className="btn btn-secondary">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
-  if (loading) {
-    return <h2>Загрузка списка телефонов...</h2>;
-  }
+const PhoneListTab = () => {
+    const [phones, setPhones] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-  if (error) {
-    return <p className="form-message error">{error}</p>;
-  }
+    useEffect(() => {
+        const fetchPhones = async () => {
+            try {
+                const phonesData = await getPhones();
+                setPhones(phonesData.sort((a, b) => b.id - a.id));
+            } catch (err) {
+                console.error('Ошибка при загрузке телефонов:', err);
+                if (err.response?.status === 401) navigate('/login');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPhones();
+    }, [navigate]);
 
-  return (
-    <div>
-      <h1>Список телефонов</h1>
-      <div className="order-page-container">
-        {phones.length === 0 ? (
-          <p>Телефоны не найдены.</p>
-        ) : (
-          <table className="orders-table">
+    if (loading) return <h4>Загрузка списка телефонов...</h4>;
+
+    return (
+        <table className="orders-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>Модель</th>
-                <th>Память</th>
-                <th>Цвет</th>
-                <th>Серийный номер</th>
-                <th>Статус</th>
-              </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Модель</th>
+                    <th>S/N</th>
+                    <th>Коммерческий статус</th>
+                </tr>
             </thead>
             <tbody>
-              {phones.map(phone => {
-                const storageId = phone.model?.storage_id;
-                const colorId = phone.model?.color_id;
-
-                // Ищем значение памяти по ID
-                const storageDisplay = storageId !== undefined && storageId !== null
-                  ? storageOptions.find(s => s.id === storageId)?.storage
-                  : null;
-
-                // Ищем название цвета по ID
-                const colorDisplay = colorId !== undefined && colorId !== null
-                  ? colorOptions.find(c => c.id === colorId)?.color_name || '-'
-                  : '-';
-                
-                const formattedStorage = storageDisplay ? `${storageDisplay}GB` : '-';
-
-                return (
-                  <tr key={phone.id}>
-                    <td>{phone.id}</td>
-                    <td>{phone.model?.base_name || '-'}</td>
-                    <td>{formattedStorage}</td>
-                    <td>{colorDisplay}</td>
-                    <td>{phone.serial_number || '-'}</td>
-                    <td>{phone.commercial_status || '-'}</td>
-                  </tr>
-                );
-              })}
+                {phones.map(phone => (
+                    <tr key={phone.id}>
+                        <td>{phone.id}</td>
+                        <td>{phone.model?.name || '-'}</td>
+                        <td>{phone.serial_number || '-'}</td>
+                        <td>{phone.commercial_status || '-'}</td>
+                    </tr>
+                ))}
             </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
+        </table>
+    );
+};
+
+
+// Вкладка "Управление моделями" (ОБНОВЛЕНА)
+const ModelManagementTab = () => {
+    const [modelColorCombos, setModelColorCombos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [editingModel, setEditingModel] = useState(null);
+    const [message, setMessage] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const data = await getModelColorCombos();
+            setModelColorCombos(data);
+        } catch (err) {
+            console.error("Ошибка:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const handleSave = async (updateData) => {
+        try {
+            await updateImageForModelColor(updateData);
+            setMessage('Фотография успешно обновлена для всей группы!');
+            setEditingModel(null);
+            await loadData();
+        } catch (err) {
+            alert('Не удалось сохранить изменения.');
+        }
+    };
+
+    // 1. УЛУЧШЕННАЯ ЛОГИКА СОРТИРОВКИ
+    const sortedAndFilteredCombos = useMemo(() => {
+        // Функция, которая присваивает "очки" каждой модели для сортировки
+        const getSortScore = (name) => {
+            // Список поколений от старых к новым. Длинные названия должны идти раньше!
+            const ranks = [
+                'iPhone 6S', 'iPhone SE', 'iPhone 7', 'iPhone 8', 'iPhone X', 
+                'iPhone XR', 'iPhone XS', 'iPhone 11', 'iPhone SE 2020', 'iPhone 12', 
+                'iPhone 13', 'iPhone SE 2022', 'iPhone 14', 'iPhone 15', 'iPhone 16'
+            ];
+            
+            // Находим, к какому поколению относится модель
+            // Идем с конца, чтобы найти самое новое поколение в названии
+            for (let i = ranks.length - 1; i >= 0; i--) {
+                if (name.includes(ranks[i])) {
+                    let score = i;
+                    // Добавляем микро-очки для Pro/Max, чтобы они были выше базовых моделей
+                    if (name.includes('Pro Max')) score += 0.3;
+                    else if (name.includes('Pro')) score += 0.2;
+                    else if (name.includes('Plus')) score += 0.1;
+                    return score;
+                }
+            }
+            return -1; // Для моделей, не попавших в список
+        };
+
+        return modelColorCombos
+            .filter(combo =>
+                combo.model_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                combo.color_name.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .sort((a, b) => getSortScore(b.model_name) - getSortScore(a.model_name));
+    }, [modelColorCombos, searchTerm]);
+
+    if (loading) return <h4>Загрузка моделей...</h4>;
+
+    return (
+        <div>
+            {message && <p className="form-message success">{message}</p>}
+            {editingModel && (
+                <EditModelModal
+                    model={editingModel}
+                    onClose={() => setEditingModel(null)}
+                    onSave={handleSave}
+                />
+            )}
+
+            <div className="form-section" style={{ maxWidth: '400px', marginBottom: '1.5rem' }}>
+                <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Поиск по модели или цвету..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            <table className="orders-table">
+                <thead>
+                    <tr>
+                        <th>Название модели</th>
+                        <th>Цвет</th>
+                        <th>Ссылка на фото</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {/* 2. Используем новый отсортированный список */}
+                    {sortedAndFilteredCombos.map(combo => (
+                        <tr key={`${combo.model_name_id}-${combo.color_id}`}>
+                            <td>{combo.model_name}</td>
+                            <td>{combo.color_name}</td>
+                            <td>{combo.image_url || 'Не задана'}</td>
+                            <td>
+                                <button onClick={() => setEditingModel(combo)} className="btn btn-secondary btn-compact">
+                                    Изменить фото
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+// ... (основной компонент PhonesPage остается без изменений) ...
+function PhonesPage() {
+    const [activeTab, setActiveTab] = useState('list');
+
+    return (
+        <div>
+            <h1>Телефоны</h1>
+            <div className="order-page-container">
+                <div className="tabs">
+                    <button
+                        className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('list')}
+                    >
+                        Список телефонов
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'management' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('management')}
+                    >
+                        Управление моделями
+                    </button>
+                </div>
+                {activeTab === 'list' ? <PhoneListTab /> : <ModelManagementTab />}
+            </div>
+        </div>
+    );
 }
 
 export default PhonesPage;

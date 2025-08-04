@@ -519,3 +519,18 @@ export const movePhoneLocation = async (phoneId, newLocation) => {
     return response.data;
 };
 
+export const updateModel = async (modelId, modelData) => {
+    const response = await axios.put(`${API_BASE_URL}/models/${modelId}`, modelData);
+    return response.data;
+};
+
+export const getModelColorCombos = async () => {
+    const response = await axios.get(`${API_BASE_URL}/models/color-combos`);
+    return response.data;
+};
+
+export const updateImageForModelColor = async (updateData) => {
+    const response = await axios.put(`${API_BASE_URL}/models/image-by-color`, updateData);
+    return response.data;
+};
+

@@ -15,7 +15,7 @@ import {
 import './OrdersPage.css';
 import './PhoneHistoryPage.css';
 import { printRepairAcceptanceDoc, printRepairFinishDoc } from '../utils/printRepairDoc';
-// 1. Убедитесь, что useParams импортирован
+import placeholderImage from '../assets/placeholder.png';
 import { useParams } from 'react-router-dom';
 
 
@@ -281,11 +281,23 @@ function PhoneHistoryPage() {
             {history && (
                  <div className="order-page-container">
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                        <div>
-                            <h2>{history.model?.name || 'Телефон'} (ID: {history.id})</h2>
-                            <p style={{ margin: '0.5rem 0' }}><strong>Серийный номер:</strong> {history.serial_number || 'Нет данных'}</p>
-                            <p style={{ margin: '0.5rem 0' }}><strong>Текущий статус:</strong> {history.commercial_status || 'Нет данных'}</p>
+                        {/* Блок с информацией о телефоне и фото */}
+                        <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+                            {history.model?.image_url && (
+                                <img 
+                                    src={history.model.image_url} 
+                                    alt={history.model.name} 
+                                    style={{ width: '100px', height: '100px', objectFit: 'contain', borderRadius: '8px' }}
+                                    onError={(e) => { e.target.onerror = null; e.target.src = placeholderImage; }}
+                                />
+                            )}
+                            <div>
+                                <h2>{history.model?.name || 'Телефон'} (ID: {history.id})</h2>
+                                <p style={{ margin: '0.5rem 0' }}><strong>Серийный номер:</strong> {history.serial_number || 'Нет данных'}</p>
+                                <p style={{ margin: '0.5rem 0' }}><strong>Текущий статус:</strong> {history.commercial_status || 'Нет данных'}</p>
+                            </div>
                         </div>
+                        {/* Блок с кнопками действий */}
                         <div>
                             {history.commercial_status === 'ПРОДАН' && (
                                 <>
