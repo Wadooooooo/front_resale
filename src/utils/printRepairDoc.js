@@ -32,7 +32,7 @@ export function printRepairAcceptanceDoc(phoneData, acceptanceData) {
             </style>
         </head>
         <body>
-            <h1>Акт приёма оборудования в гарантийный ремонт</h1>
+            <h1>${docTitle}</h1>
             <p style="text-align: center;">от ${new Date().toLocaleDateString('ru-RU')}</p>
 
             <div class="details-grid">

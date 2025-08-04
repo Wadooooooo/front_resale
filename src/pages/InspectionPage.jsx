@@ -459,13 +459,7 @@ function InspectionPage() {
                                         </p>
                                     </div>
                                 )}
-                                {drainRate && (
-                                    <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e9ecef', borderRadius: '0.5rem', textAlign: 'center' }}>
-                                        <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '500' }}>
-                                            Расчётный расход: <strong>{drainRate} %/час</strong>
-                                        </p>
-                                    </div>
-                                )}
+                                
                                 <button type="submit" className={`btn ${testResult && !testResult.passed ? 'btn-danger' : 'btn-primary'}`}>
                                     {testResult && !testResult.passed ? 'Отправить в брак' : 'Завершить инспекцию'}
                                 </button>

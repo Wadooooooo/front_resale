@@ -215,8 +215,6 @@ const MovementTab = () => {
                                     <button onClick={() => handleMove(phone.id, 'ВИТРИНА')} className="btn btn-primary btn-compact">На витрину</button>
                                 ) : phone.storage_location === 'ВИТРИНА' ? (
                                     <button onClick={() => handleMove(phone.id, 'СКЛАД')} className="btn btn-secondary btn-compact">На склад</button>
-                                ) : phone.storage_location === 'ПОДМЕННЫЙ_ФОНД' ? (
-                                    <button onClick={() => handleMove(phone.id, 'СКЛАД')} className="btn btn-secondary btn-compact">На склад</button>
                                 ) : null}
                             </td>
                         </tr>

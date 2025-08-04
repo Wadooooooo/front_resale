@@ -3,7 +3,7 @@
 // ... (импорты и другие компоненты остаются без изменений) ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { getPhones, getModelColorCombos, updateImageForModelColor } from '../api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './OrdersPage.css';
 import './AccessoriesPage.css';
 
@@ -82,7 +82,15 @@ const PhoneListTab = () => {
                     <tr key={phone.id}>
                         <td>{phone.id}</td>
                         <td>{phone.model?.name || '-'}</td>
-                        <td>{phone.serial_number || '-'}</td>
+                        <td>
+                            {phone.serial_number ? (
+                                <Link to={`/phone-history/${phone.serial_number}`} className="clickable-sn">
+                                    {phone.serial_number}
+                                </Link>
+                            ) : (
+                                '-'
+                            )}
+                        </td>
                         <td>{phone.commercial_status || '-'}</td>
                     </tr>
                 ))}

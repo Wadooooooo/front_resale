@@ -7,6 +7,30 @@ import { printReceipt } from '../utils/printReceipt';
 import './OrdersPage.css';
 import { useAuth } from '../context/AuthContext';
 
+const creditOptions = {
+    "Рассрочка на 3 месяца": 7,
+    "Рассрочка на 6 месяцев": 9.5,
+    "Рассрочка на 10 месяцев": 13,
+    "Рассрочка на 12 месяцев": 14.5,
+    "Рассрочка на 18 месяцев": 19,
+    "Рассрочка на 24 месяца": 28.5,
+    "По СБП": 5,
+    "Картой": 5,
+};
+
+// Функция для расчета по вашей формуле
+const calculatePrice = (basePrice, percent) => {
+    if (!basePrice || !percent) return 0;
+    
+    // 1. Сначала вычисляем "сырую" цену по формуле, как и раньше
+    const rawPrice = (basePrice * 100) / (100 - percent);
+    
+    // 2. Затем применяем логику округления вверх до ближайшей сотни
+    const roundedPrice = Math.ceil(rawPrice / 100) * 100;
+    
+    return roundedPrice;
+};
+
 const paymentMethodOptions = [
     { value: 'НАЛИЧНЫЕ', label: 'Наличные' },
     { value: 'КАРТА', label: 'Карта' },
@@ -121,6 +145,14 @@ function SalesPage() {
     const [saleSuccessData, setSaleSuccessData] = useState(null);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const { hasPermission } = useAuth();
+    const [phoneForCalculator, setPhoneForCalculator] = useState(null);
+
+    useEffect(() => {
+        // Ищем первый телефон в корзине, чтобы использовать его цену для расчетов
+        const firstPhoneInCart = cart.find(item => item.product_type === 'Телефон');
+        setPhoneForCalculator(firstPhoneInCart || null);
+    }, [cart]); // Этот хук будет срабатывать каждый раз, когда меняется корзина
+
 
     // Загрузка данных (без изменений)
     const loadData = async () => {
@@ -381,6 +413,48 @@ function SalesPage() {
             </div>
         </div>
     )}   
+    {phoneForCalculator && (
+        <div className="order-page-container" style={{marginTop: '2rem'}}>
+            <h2>Калькулятор рассрочки для "{phoneForCalculator.name}"</h2>
+            <p>Цена за наличный расчет: <strong>{parseFloat(phoneForCalculator.price).toLocaleString('ru-RU')} руб.</strong></p>
+            <table className="orders-table">
+                <thead>
+                    <tr>
+                        <th>Способ оплаты</th>
+                        <th>Итоговая стоимость</th>
+                        <th>Ежемесячный платеж</th>
+                        <th>Переплата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {Object.entries(creditOptions).map(([name, percent]) => {
+                        const totalPrice = calculatePrice(phoneForCalculator.price, percent);
+                        const monthsMatch = name.match(/(\d+)\s*месяц/);
+                        const months = monthsMatch ? parseInt(monthsMatch[1], 10) : null;
+                        const monthlyPayment = months ? (totalPrice / months) : null;
+                        
+                        // VVV НОВАЯ СТРОКА: Вычисляем переплату VVV
+                        const overpayment = totalPrice - phoneForCalculator.price;
+
+                        return (
+                            <tr key={name}>
+                                <td>{name}</td>
+                                <td><strong>{totalPrice.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</strong></td>
+                                <td>
+                                    {monthlyPayment 
+                                        ? `${monthlyPayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.`
+                                        : '—'
+                                    }
+                                </td>
+                                {/* VVV НОВАЯ ЯЧЕЙКА: Отображаем переплату VVV */}
+                                <td>{overpayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    )}
             </div>
 
             <div className="order-page-container">

@@ -89,6 +89,7 @@ function PhoneHistoryPage() {
 
     const [isReturnLoanerModalOpen, setIsReturnLoanerModalOpen] = useState(false);
     const [loanerLogToReturn, setLoanerLogToReturn] = useState(null);
+    const [notification, setNotification] = useState({ isOpen: false, message: '' });
 
     const findHistoryBySN = async (snToSearch) => {
         if (!snToSearch || !snToSearch.trim()) { setError('Введите серийный номер.'); return; }
@@ -117,7 +118,28 @@ function PhoneHistoryPage() {
     const handleAcceptanceSubmit = async (e) => { e.preventDefault(); if (isSubmitting) return; setIsSubmitting(true); try { const dataToSend = { ...acceptanceData, estimated_cost: acceptanceData.estimated_cost ? parseFloat(acceptanceData.estimated_cost) : null }; await startRepair(history.id, dataToSend); setMessage('Телефон успешно принят в ремонт.'); printRepairAcceptanceDoc(history, acceptanceData); setIsAcceptanceModalOpen(false); await findHistoryBySN(serialNumber); } catch (err) { alert(err.response?.data?.detail || 'Ошибка при приеме в ремонт.'); } finally { setIsSubmitting(false); } };
     const handleFinishInputChange = (e) => { const { name, value } = e.target; setFinishData(prev => ({ ...prev, [name]: value })); };
     const handleFinishSelectChange = (selectedOption) => { setFinishData(prev => ({ ...prev, expense_account_id: selectedOption })); };
-    const handleFinishSubmit = async (e) => { e.preventDefault(); if (isSubmitting) return; setIsSubmitting(true); try { const dataToSend = { ...finishData, final_cost: finishData.final_cost ? parseFloat(finishData.final_cost) : null, service_cost: finishData.service_cost ? parseFloat(finishData.service_cost) : null, expense_account_id: finishData.expense_account_id ? finishData.expense_account_id.value : null }; const currentRepair = history.repairs.find(r => !r.date_returned); await finishRepair(currentRepair.id, dataToSend); setMessage('Ремонт успешно завершен.'); printRepairFinishDoc(history, finishData); setIsFinishModalOpen(false); setFinishData({ work_performed: '', final_cost: '', service_cost: '', expense_account_id: null }); await findHistoryBySN(serialNumber); } catch (err) { alert(err.response?.data?.detail || 'Ошибка при завершении ремонта.'); } finally { setIsSubmitting(false); } };
+    const handleFinishSubmit = async (e) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        
+
+        setIsSubmitting(true);
+        try {
+            const dataToSend = { ...finishData, final_cost: finishData.final_cost ? parseFloat(finishData.final_cost) : null, service_cost: finishData.service_cost ? parseFloat(finishData.service_cost) : null, expense_account_id: finishData.expense_account_id ? finishData.expense_account_id.value : null };
+            // const currentRepair = history.repairs.find(r => !r.date_returned); // Мы уже нашли его выше
+            await finishRepair(currentRepair.id, dataToSend);
+            setMessage('Ремонт успешно завершен.');
+            printRepairFinishDoc(history, finishData);
+            setIsFinishModalOpen(false);
+            setFinishData({ work_performed: '', final_cost: '', service_cost: '', expense_account_id: null });
+            await findHistoryBySN(serialNumber);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Ошибка при завершении ремонта.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handlePaymentSubmit = async (e) => { e.preventDefault(); if(!paymentAccountId) { alert("Выберите счет для оплаты"); return; } if (isSubmitting) return; setIsSubmitting(true); try { const repairToPay = history.repairs.find(r => r.date_returned && r.payment_status === 'ОЖИДАНИЕ ОПЛАТЫ'); const paymentData = { account_id: paymentAccountId.value, amount: repairToPay.final_cost }; await payForRepair(repairToPay.id, paymentData); setMessage('Оплата за ремонт успешно принята!'); setIsPaymentModalOpen(false); await findHistoryBySN(serialNumber); } catch(err) { alert(err.response?.data?.detail || 'Ошибка при приеме оплаты.'); } finally { setIsSubmitting(false); } };
     const handleRefundSubmit = async (e) => { e.preventDefault(); if (!refundAccountId) { alert('Пожалуйста, выберите счет для возврата средств.'); return; } if (isSubmitting) return; setIsSubmitting(true); try { const refundData = { account_id: refundAccountId.value, notes: refundNotes }; await processRefund(history.id, refundData); setMessage('Возврат успешно оформлен!'); setIsRefundModalOpen(false); setRefundAccountId(null); setRefundNotes(''); await findHistoryBySN(serialNumber); } catch (err) { alert(err.response?.data?.detail || 'Не удалось оформить возврат.'); } finally { setIsSubmitting(false); } };
     const handleOpenExchangeModal = async () => { try { const replacements = await getReplacementPhones(history.id); setReplacementOptions(replacements); setIsExchangeModalOpen(true); } catch (err) { alert('Не удалось загрузить список телефонов для обмена.'); } };
@@ -125,32 +147,77 @@ function PhoneHistoryPage() {
     const handleOpenLoanerModal = async () => { setIsSubmitting(true); try { const loaners = await getAvailableLoanerPhones(); setAvailableLoaners(loaners); setIsLoanerModalOpen(true); } catch (err) { alert('Не удалось загрузить список доступных телефонов.'); } finally { setIsSubmitting(false); } };
     const handleIssueLoanerSubmit = async (e) => { e.preventDefault(); if (!selectedLoanerId) { alert('Выберите подменный телефон.'); return; } if (isSubmitting) return; setIsSubmitting(true); try { const currentRepair = history.repairs.find(r => !r.date_returned); await issueLoanerPhone(currentRepair.id, selectedLoanerId); const selectedLoanerObject = availableLoaners.find(p => p.id === parseInt(selectedLoanerId)); if (selectedLoanerObject) { printLoanerIssuanceDoc(history, selectedLoanerObject, currentRepair); } setMessage('Подменный телефон успешно выдан.'); setIsLoanerModalOpen(false); setSelectedLoanerId(''); await findHistoryBySN(serialNumber); } catch (err) { alert(err.response?.data?.detail || 'Ошибка при выдаче подменного телефона.'); } finally { setIsSubmitting(false); } };
     const openReturnLoanerModal = (loanerLogId) => { setLoanerLogToReturn(loanerLogId); setIsReturnLoanerModalOpen(true); };
-    const confirmAndReturnLoaner = async () => { if (!loanerLogToReturn) return; setIsSubmitting(true); try { await returnLoanerPhone(loanerLogToReturn); const currentRepair = history.repairs.find(r => r.active_loaner?.id === loanerLogToReturn); const loanerPhone = { name: currentRepair.active_loaner.loaner_phone_details, serial_number: '' }; if (currentRepair) { printLoanerReturnDoc(history, loanerPhone, currentRepair); } setMessage('Подменный телефон принят на склад и отправлен на инспекцию.'); await findHistoryBySN(serialNumber); } catch (err) { alert(err.response?.data?.detail || 'Ошибка при возврате.'); } finally { setIsSubmitting(false); setIsReturnLoanerModalOpen(false); setLoanerLogToReturn(null); } };
+    const confirmAndReturnLoaner = async () => {
+        if (!loanerLogToReturn) return;
+        setIsSubmitting(true);
+        try {
+            await returnLoanerPhone(loanerLogToReturn);
+            const currentRepair = history.repairs.find(r => r.active_loaner?.id === loanerLogToReturn);
 
+            // --- НАЧАЛО НОВОЙ ЛОГИКИ ---
+            let loanerName = "Неизвестно";
+            let loanerSN = "";
+            
+            if (currentRepair && currentRepair.active_loaner) {
+                const detailsString = currentRepair.active_loaner.loaner_phone_details;
+                
+                // Ищем серийный номер в скобках (S/N: XXXXX)
+                const snMatch = detailsString.match(/\(S\/N: (.*?)\)/);
+                if (snMatch && snMatch[1]) {
+                    loanerSN = snMatch[1];
+                    // Именем считаем всё, что до скобок, и убираем "ID: xx, "
+                    loanerName = detailsString.split('(S/N:')[0].replace(/ID: \d+, /, '').trim();
+                } else {
+                    loanerName = detailsString; // Если S/N не найден, используем всю строку
+                }
+            }
+            
+            const loanerPhone = { name: loanerName, serial_number: loanerSN };
+            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+            if (currentRepair) {
+                printLoanerReturnDoc(history, loanerPhone, currentRepair);
+            }
+            setMessage('Подменный телефон принят на склад и отправлен на инспекцию.');
+            await findHistoryBySN(serialNumber);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Ошибка при возврате.');
+        } finally {
+            setIsSubmitting(false);
+            setIsReturnLoanerModalOpen(false);
+            setLoanerLogToReturn(null);
+        }
+    };
     const accountOptions = accounts.map(acc => ({ value: acc.id, label: acc.name }));
     
     // --- НАЧАЛО НОВОЙ ЛОГИКИ ---
     const currentRepair = history?.repairs?.find(r => !r.date_returned);
-    const repairAwaitingPayment = history?.repairs?.find(r => r.date_returned && r.payment_status === 'ОЖИДАНИЕ_ОПЛАТЫ');
+    const repairAwaitingPayment = history?.repairs?.find(r => r.date_returned && r.payment_status === 'ОЖИДАНИЕ ОПЛАТЫ');
 
     const getDisplayStatus = () => {
         if (!history) return '';
-        // Если статус не связан с ремонтом, просто возвращаем его
-        if (history.commercial_status !== 'ГАРАНТИЙНЫЙ_РЕМОНТ') {
-            return history.commercial_status;
+        // Если статус телефона - не "В ремонте", то просто возвращаем его как есть
+        if (history.commercial_status !== 'В_РЕМОНТЕ') {
+            return formatEnumValueForDisplay(history.commercial_status); // Используем форматирование
         }
+        
+        // Если статус "В ремонте", начинаем определять детали
         // Если ремонт завершен и ожидает оплаты
         if (repairAwaitingPayment) {
             return 'Ожидает оплаты за ремонт';
         }
-        // Если ремонт в процессе
+        // Если ремонт в процессе (еще не завершен)
         if (currentRepair) {
             return currentRepair.repair_type === 'ПЛАТНЫЙ' ? 'В платном ремонте' : 'В гарантийном ремонте';
         }
-        // Запасной вариант
-        return history.commercial_status;
+        // Запасной вариант, если что-то пошло не так
+        return 'В ремонте';
     };
-    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+    const formatEnumValueForDisplay = (value) => {
+        if (!value) return "";
+        return value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
+    };
 
     return (
         <div>
@@ -177,7 +244,22 @@ function PhoneHistoryPage() {
                         </div>
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
                             {history.commercial_status === 'ПРОДАН' && ( <> <button onClick={() => setIsRefundModalOpen(true)} className="btn btn-danger">Возврат денег</button> <button onClick={handleOpenExchangeModal} className="btn btn-warning">Обмен</button> <button onClick={() => setIsAcceptanceModalOpen(true)} className="btn btn-secondary">В ремонт</button> </> )}
-                            {currentRepair && !currentRepair.date_returned && ( <> <button onClick={() => setIsFinishModalOpen(true)} className="btn btn-primary">Завершить ремонт</button> {!currentRepair.active_loaner && <button onClick={handleOpenLoanerModal} className="btn btn-info" disabled={isSubmitting}>Выдать подменный</button>} </> )}
+                            {currentRepair && !currentRepair.date_returned && ( <> 
+                            <button 
+                                onClick={() => {
+                                    if (currentRepair.active_loaner) {
+                                        // VVV ИЗМЕНЕНИЕ ЗДЕСЬ VVV
+                                        setNotification({ isOpen: true, message: 'Невозможно завершить ремонт! Сначала необходимо принять подменный телефон от клиента.' });
+                                    } else {
+                                        setIsFinishModalOpen(true);
+                                    }
+                                }} 
+                                className="btn btn-primary"
+                            >
+                                Завершить ремонт
+                            </button>      
+                            {!currentRepair.active_loaner && <button onClick={handleOpenLoanerModal} className="btn btn-info" disabled={isSubmitting}>Выдать подменный</button>} </> )}
+                            
                             {currentRepair?.active_loaner && ( <button onClick={() => openReturnLoanerModal(currentRepair.active_loaner.id)} className="btn btn-secondary" disabled={isSubmitting}>Принять подменный</button> )}
                             
                             {/* ИСПОЛЬЗУЕМ НОВУЮ ПЕРЕМЕННУЮ ДЛЯ ОТОБРАЖЕНИЯ КНОПКИ ОПЛАТЫ */}
@@ -201,6 +283,22 @@ function PhoneHistoryPage() {
             {isExchangeModalOpen && ( <div className="confirm-modal-overlay"> <div className="confirm-modal-dialog"> <h3>Обмен устройства</h3> <p><strong>{history.model?.name}</strong></p> <form onSubmit={handleExchangeSubmit}> <div className="form-section" style={{textAlign: 'left'}}> <label>Выберите телефон на замену со склада:</label> {replacementOptions.length > 0 ? ( <select value={selectedReplacementId} onChange={(e) => setSelectedReplacementId(e.target.value)} className="form-select" required> <option value="">-- Доступные телефоны --</option> {replacementOptions.map(phone => ( <option key={phone.id} value={phone.id}> {phone.full_model_name} (S/N: {phone.serial_number || 'не указан'}) </option> ))} </select> ) : (<p>На складе нет подходящих телефонов для обмена.</p>)} </div> <div className="confirm-modal-buttons"> <button type="submit" className="btn btn-primary" disabled={isSubmitting || replacementOptions.length === 0}>{isSubmitting ? 'Выполняется...' : 'Подтвердить обмен'}</button> <button type="button" onClick={() => setIsExchangeModalOpen(false)} className="btn btn-secondary" disabled={isSubmitting}>Отмена</button> </div> </form> </div> </div> )}
             {isRefundModalOpen && ( <div className="confirm-modal-overlay"> <div className="confirm-modal-dialog"> <h3>Оформление возврата</h3> <p>Телефон: <strong>{history.model?.name}</strong></p> <p>Сумма к возврату: <strong>{history.sale_info?.unit_price} руб.</strong></p> <form onSubmit={handleRefundSubmit}> <div className="form-section" style={{textAlign: 'left'}}> <label>Счет для списания средств*</label> <Select options={accountOptions} value={refundAccountId} onChange={setRefundAccountId} placeholder="Выберите счет..." required /> </div> <div className="form-section" style={{textAlign: 'left'}}> <label>Примечание</label> <textarea value={refundNotes} onChange={(e) => setRefundNotes(e.target.value)} className="form-input" rows="3"></textarea> </div> <div className="confirm-modal-buttons"> <button type="submit" className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Выполняется...' : 'Подтвердить возврат'}</button> <button type="button" onClick={() => setIsRefundModalOpen(false)} className="btn btn-secondary" disabled={isSubmitting}>Отмена</button> </div> </form> </div> </div> )}
             {isReturnLoanerModalOpen && ( <div className="confirm-modal-overlay"> <div className="confirm-modal-dialog"> <h3>Подтверждение возврата</h3> <p>Вы уверены, что хотите принять подменный телефон обратно на склад? Будет распечатан акт возврата.</p> <div className="confirm-modal-buttons"> <button onClick={confirmAndReturnLoaner} className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Обработка...' : 'Да, принять'}</button> <button onClick={() => setIsReturnLoanerModalOpen(false)} className="btn btn-secondary" disabled={isSubmitting}>Отмена</button> </div> </div> </div> )}
+            {notification.isOpen && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog">
+                        <h3>Уведомление</h3>
+                        <p>{notification.message}</p>
+                        <div className="confirm-modal-buttons">
+                            <button 
+                                onClick={() => setNotification({ isOpen: false, message: '' })} 
+                                className="btn btn-primary"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
