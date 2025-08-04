@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import styles from './loginPage.module.css';
 
 function LoginPage() {
   const { login } = useAuth();
@@ -18,31 +19,39 @@ function LoginPage() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0 0 0 / 10%)' }}>
-      <h2>Вход в систему</h2>
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Имя пользователя: </label>
+    <div className={styles.container}>
+      <div className={styles.login_card}>
+        <h1>resale</h1>
+      <form onSubmit={handleLogin} className='login-form'>
+        <div className={styles.input_group}>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            style={{ width: 'calc(100% - 22px)', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+            className={styles.login_input}
+            id = 'nameInput'
           />
+          <span className={styles.spaninput}>
+            Имя пользователя
+          </span>
         </div>
-        <div>
-          <label>Пароль: </label>
+        <div className={styles.input_group}>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: 'calc(100% - 22px)', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+            className={styles.login_input}
+            id = 'passInput'
           />
+          <span className={styles.spaninput}>
+            Пароль
+          </span>
         </div>
-        <button type="submit" style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Войти</button>
+        <button type="submit" className={styles.btn}>Войти</button>
       </form>
+      </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );

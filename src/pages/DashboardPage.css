@@ -1,4 +1,6 @@
 /* src/pages/DashboardPage.css */
+@import url('../styles/fonts.css');
+
 
 .dashboard-grid {
     display: grid;
