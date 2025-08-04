@@ -11,6 +11,15 @@ import {
 } from '../api';
 import './OrdersPage.css';
 
+const BATTERY_THRESHOLDS = {
+    "iPhone 12": 12.0,
+    "iPhone 13": 12.0,
+    "iPhone 14": 11.5,
+    "iPhone 14 Pro": 9.0,
+    "iPhone 15": 8.5,
+};
+const DEFAULT_BATTERY_THRESHOLD = 12.0;
+
 function InspectionPage() {
     const [awaitingChecklist, setAwaitingChecklist] = useState([]);
     const [awaitingBatteryTest, setAwaitingBatteryTest] = useState([]);
@@ -33,6 +42,8 @@ function InspectionPage() {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [drainRate, setDrainRate] = useState(null);
+    const [testResult, setTestResult] = useState(null); 
+
 
     const loadData = async () => {
         try {
@@ -77,7 +88,8 @@ function InspectionPage() {
 
     // --- 2. ЛОГИКА РАСЧЕТА РАСХОДА БАТАРЕИ (без изменений) ---
     useEffect(() => {
-        const { start_time, end_time, start_battery_level, end_battery_level } = batteryTest;
+    const { start_time, end_time, start_battery_level, end_battery_level } = batteryTest;
+        setTestResult(null); // Сбрасываем результат при любом изменении
 
         if (start_time && end_time && start_battery_level && end_battery_level) {
             const startTime = new Date(start_time);
@@ -89,20 +101,40 @@ function InspectionPage() {
                 const durationMs = endTime.getTime() - startTime.getTime();
                 const durationHours = durationMs / (1000 * 60 * 60);
                 const batteryDropped = startLevel - endLevel;
-                
+
                 if (durationHours > 0) {
                     const rate = batteryDropped / durationHours;
-                    setDrainRate(rate.toFixed(2));
-                } else {
-                    setDrainRate(null);
-                }
-            } else {
-                setDrainRate(null);
-            }
-        } else {
-            setDrainRate(null);
-        }
-    }, [batteryTest]);
+                    const rateFixed = rate.toFixed(2);
+                    setDrainRate(rateFixed);
+
+                    // VVV НАЧАЛО НОВОЙ ЛОГИКИ VVV
+                    const modelName = selectedPhone?.model?.name || '';
+                    let threshold = DEFAULT_BATTERY_THRESHOLD;
+                    // Ищем подходящий порог по частичному совпадению
+                    for (const key in BATTERY_THRESHOLDS) {
+                        if (modelName.includes(key)) {
+                            threshold = BATTERY_THRESHOLDS[key];
+                            break;
+                        }
+                    }
+
+                    if (rate > threshold) {
+                        setTestResult({
+                            passed: false,
+                            message: `БРАК: Расход ${rateFixed}%/час превышает порог в ${threshold}%/час`
+                        });
+                    } else {
+                        setTestResult({
+                            passed: true,
+                            message: `НОРМА: Расход ${rateFixed}%/час в пределах нормы (${threshold}%/час)`
+                        });
+                    }
+                    // ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^
+
+                } else { setDrainRate(null); }
+            } else { setDrainRate(null); }
+        } else { setDrainRate(null); }
+    }, [batteryTest, selectedPhone]);
 
     
     // --- 3. ОБРАБОТЧИКИ СОБЫТИЙ ---
@@ -411,6 +443,22 @@ function InspectionPage() {
                                         <input type="number" className="form-input" value={batteryTest.end_battery_level} onChange={(e) => setBatteryTest({...batteryTest, end_battery_level: e.target.value})} />
                                     </div>
                                 </div>
+                                {testResult && (
+                                    <div 
+                                        className="form-message"
+                                        style={{ 
+                                            marginTop: '1rem', 
+                                            textAlign: 'center',
+                                            backgroundColor: testResult.passed ? '#d1e7dd' : '#f8d7da',
+                                            color: testResult.passed ? '#0f5132' : '#842029',
+                                            border: `1px solid ${testResult.passed ? '#badbcc' : '#f5c2c7'}`
+                                        }}
+                                    >
+                                        <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '500' }}>
+                                            {testResult.message}
+                                        </p>
+                                    </div>
+                                )}
                                 {drainRate && (
                                     <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e9ecef', borderRadius: '0.5rem', textAlign: 'center' }}>
                                         <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '500' }}>
@@ -418,7 +466,9 @@ function InspectionPage() {
                                         </p>
                                     </div>
                                 )}
-                                <button type="submit" className="btn btn-primary">Завершить инспекцию</button>
+                                <button type="submit" className={`btn ${testResult && !testResult.passed ? 'btn-danger' : 'btn-primary'}`}>
+                                    {testResult && !testResult.passed ? 'Отправить в брак' : 'Завершить инспекцию'}
+                                </button>
                             </form>
                         </div>
                     )}

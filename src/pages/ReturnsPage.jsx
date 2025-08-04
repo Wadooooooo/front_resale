@@ -133,6 +133,7 @@ function ReturnsPage() {
                             <th>ID</th>
                             <th>Модель</th>
                             <th>S/N</th>
+                            <th>Причина брака</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -142,6 +143,7 @@ function ReturnsPage() {
                                 <td>{phone.id}</td>
                                 <td>{phone.model?.name || 'Нет данных'}</td>
                                 <td>{phone.serial_number}</td>
+                                <td>{phone.defect_reason || 'Не указана'}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -159,6 +161,7 @@ function ReturnsPage() {
                             <th>ID</th>
                             <th>Модель</th>
                             <th>S/N</th>
+                            <th>Причина отправки</th>
                             <th>Действие</th>
                         </tr>
                     </thead>
@@ -168,6 +171,7 @@ function ReturnsPage() {
                                 <td>{phone.id}</td>
                                 <td>{phone.model?.name || 'Нет данных'}</td>
                                 <td>{phone.serial_number}</td>
+                                <td>{phone.defect_reason || 'Не указана'}</td>
                                 <td>
                                     <div style={{ display: 'inline-flex', gap: '5px' }}>
                                         <button onClick={() => handleReturn(phone.id)} className="btn btn-secondary btn-compact">Принять (ремонт)</button>

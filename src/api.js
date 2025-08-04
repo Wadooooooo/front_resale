@@ -382,13 +382,19 @@ export const processRefund = async (phoneId, refundData) => {
     return response.data;
 };
 
-export const startWarrantyRepair = async (phoneId, acceptanceData) => {
+export const startRepair = async (phoneId, acceptanceData) => {
     const response = await axios.post(`${API_BASE_URL}/phones/${phoneId}/start-repair`, acceptanceData);
     return response.data;
 };
 
-export const finishWarrantyRepair = async (phoneId, finishData) => {
-    const response = await axios.post(`${API_BASE_URL}/phones/${phoneId}/finish-repair`, finishData);
+export const finishRepair = async (repairId, finishData) => {
+    const response = await axios.post(`${API_BASE_URL}/repairs/${repairId}/finish`, finishData);
+    return response.data;
+};
+
+// ДОБАВЬТЕ НОВУЮ ФУНКЦИЮ
+export const payForRepair = async (repairId, paymentData) => {
+    const response = await axios.post(`${API_BASE_URL}/repairs/${repairId}/pay`, paymentData);
     return response.data;
 };
 
@@ -531,6 +537,21 @@ export const getModelColorCombos = async () => {
 
 export const updateImageForModelColor = async (updateData) => {
     const response = await axios.put(`${API_BASE_URL}/models/image-by-color`, updateData);
+    return response.data;
+};
+
+export const getAvailableLoanerPhones = async () => {
+    const response = await axios.get(`${API_BASE_URL}/phones/available-for-loaner`);
+    return response.data;
+};
+
+export const issueLoanerPhone = async (repairId, loanerPhoneId) => {
+    const response = await axios.post(`${API_BASE_URL}/repairs/${repairId}/issue-loaner`, { loaner_phone_id: loanerPhoneId });
+    return response.data;
+};
+
+export const returnLoanerPhone = async (loanerLogId) => {
+    const response = await axios.post(`${API_BASE_URL}/loaner-logs/${loanerLogId}/return-loaner`);
     return response.data;
 };
 
