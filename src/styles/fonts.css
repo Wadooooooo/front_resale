@@ -4,8 +4,12 @@ html {
 
 @font-face {
   font-family: 'Ubuntu';
-  src: url('../fonts/Ubuntu-Regular.woff2') format('woff2');
-  font-weight: 400;
+  src:
+    /* Сначала предлагаем современный формат woff2 */
+    url('../assets/fonts/Ubuntu-Regular.woff2') format('woff2'),
+    /* Потом, для старых браузеров, предлагаем ttf */
+    url('../assets/fonts/Ubuntu-Regular.ttf') format('truetype');
+  font-weight: 400; /* 400 это и есть normal */
   font-display: swap;
 }
 
