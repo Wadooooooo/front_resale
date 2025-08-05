@@ -142,6 +142,11 @@ function SalesPage() {
     const [recommendedAccessories, setRecommendedAccessories] = useState([]);
     const [discount, setDiscount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [cashReceived, setCashReceived] = useState('');
+    const [changeGiven, setChangeGiven] = useState(0);
+    const [customerDidNotTakeChange, setCustomerDidNotTakeChange] = useState(false);
+    const [actualChangeGiven, setActualChangeGiven] = useState('');
+    const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
     const [saleSuccessData, setSaleSuccessData] = useState(null);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const { hasPermission } = useAuth();
@@ -306,7 +311,14 @@ function SalesPage() {
                 unit_price: item.isGift ? 0 : item.price
             })),
             account_id: selectedAccountId.value,
-            discount: parseFloat(discount) || 0
+            discount: parseFloat(discount) || 0,
+            cash_received: cashReceived ? parseFloat(cashReceived) : null,
+            change_given: (changeGiven > 0 && !customerDidNotTakeChange) ? changeGiven : null,
+            cash_received: cashReceived ? parseFloat(cashReceived) : null,
+            // Определяем, какую сдачу реально выдали
+            change_given: customerDidNotTakeChange 
+                ? (actualChangeGiven ? parseFloat(actualChangeGiven) : 0)
+                : (changeGiven > 0 ? changeGiven : null)
         };
         try {
             const saleResponse = await createSale(saleData);
@@ -326,7 +338,21 @@ function SalesPage() {
     
     const subtotal = cart.reduce((total, item) => total + ((item.isGift ? 0 : parseFloat(item.price)) * item.quantity), 0);
     const totalAmount = subtotal - (parseFloat(discount) || 0);
+    const handleCashReceivedChange = (e) => {
+        const received = e.target.value;
+        setCashReceived(received);
+        const receivedAmount = parseFloat(received) || 0;
 
+        if (receivedAmount >= totalAmount) {
+            const calculatedChange = receivedAmount - totalAmount;
+            setChangeGiven(calculatedChange);
+            // При изменении полученной суммы, сбрасываем ручной ввод сдачи
+            setActualChangeGiven(calculatedChange.toFixed(2)); 
+        } else {
+            setChangeGiven(0);
+            setActualChangeGiven('0.00');
+        }
+    };
     if (loading) return <h2>Загрузка...</h2>;
 
     return (
@@ -415,44 +441,55 @@ function SalesPage() {
     )}   
     {phoneForCalculator && (
         <div className="order-page-container" style={{marginTop: '2rem'}}>
-            <h2>Калькулятор рассрочки для "{phoneForCalculator.name}"</h2>
-            <p>Цена за наличный расчет: <strong>{parseFloat(phoneForCalculator.price).toLocaleString('ru-RU')} руб.</strong></p>
-            <table className="orders-table">
-                <thead>
-                    <tr>
-                        <th>Способ оплаты</th>
-                        <th>Итоговая стоимость</th>
-                        <th>Ежемесячный платеж</th>
-                        <th>Переплата</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {Object.entries(creditOptions).map(([name, percent]) => {
-                        const totalPrice = calculatePrice(phoneForCalculator.price, percent);
-                        const monthsMatch = name.match(/(\d+)\s*месяц/);
-                        const months = monthsMatch ? parseInt(monthsMatch[1], 10) : null;
-                        const monthlyPayment = months ? (totalPrice / months) : null;
-                        
-                        // VVV НОВАЯ СТРОКА: Вычисляем переплату VVV
-                        const overpayment = totalPrice - phoneForCalculator.price;
-
-                        return (
-                            <tr key={name}>
-                                <td>{name}</td>
-                                <td><strong>{totalPrice.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</strong></td>
-                                <td>
-                                    {monthlyPayment 
-                                        ? `${monthlyPayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.`
-                                        : '—'
-                                    }
-                                </td>
-                                {/* VVV НОВАЯ ЯЧЕЙКА: Отображаем переплату VVV */}
-                                <td>{overpayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</td>
+            <h2 
+                onClick={() => setIsCalculatorOpen(!isCalculatorOpen)} 
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+            >
+                Калькулятор рассрочки {isCalculatorOpen ? '▼' : '▶'}
+            </h2>
+            
+            {isCalculatorOpen && (
+                <>
+                    <p>
+                        Расчет для: <strong>{phoneForCalculator.name}</strong>
+                        <br />
+                        Цена за наличный расчет: <strong>{parseFloat(phoneForCalculator.price).toLocaleString('ru-RU')} руб.</strong>
+                    </p>
+                    <table className="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Способ оплаты</th>
+                                <th>Итоговая стоимость</th>
+                                <th>Ежемесячный платеж</th>
+                                <th>Переплата</th>
                             </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            {Object.entries(creditOptions).map(([name, percent]) => {
+                                const totalPrice = calculatePrice(phoneForCalculator.price, percent);
+                                const monthsMatch = name.match(/(\d+)\s*месяц/);
+                                const months = monthsMatch ? parseInt(monthsMatch[1], 10) : null;
+                                const monthlyPayment = months ? (totalPrice / months) : null;
+                                const overpayment = totalPrice - phoneForCalculator.price;
+
+                                return (
+                                    <tr key={name}>
+                                        <td>{name}</td>
+                                        <td><strong>{totalPrice.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</strong></td>
+                                        <td>
+                                            {monthlyPayment 
+                                                ? `${monthlyPayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.`
+                                                : '—'
+                                            }
+                                        </td>
+                                        <td>{overpayment.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} руб.</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </>
+            )}
         </div>
     )}
             </div>
@@ -493,9 +530,56 @@ function SalesPage() {
                     <p>Скидка: <span>-{(parseFloat(discount) || 0).toFixed(2)} руб.</span></p>
                     <h3>Итого: <span>{totalAmount.toFixed(2)} руб.</span></h3>
                 </div>
-                <button onClick={handleSubmitSale} className="btn btn-primary" style={{ float: 'right' }} disabled={cart.length === 0 || isSubmitting}>
-                    {isSubmitting ? 'Оформление...' : 'Оформить продажу'}
-                </button>
+                {paymentMethod.value === 'НАЛИЧНЫЕ' && (
+                    <div className="details-grid" style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                        <div className="form-section">
+                            <label>Получено от клиента (руб.)</label>
+                            <input 
+                                type="number" 
+                                value={cashReceived} 
+                                onChange={handleCashReceivedChange} 
+                                className="form-input" 
+                                placeholder={totalAmount.toFixed(2)}
+                            />
+                        </div>
+                        <div className="form-section">
+                            <label>Сдача (руб.)</label>
+                            <input 
+                                type="number"
+                                step="0.01"
+                                // Если чек-бокс нажат - используем ручной ввод, иначе - авто-расчет
+                                value={customerDidNotTakeChange ? actualChangeGiven : changeGiven.toFixed(2)}
+                                // Поле можно редактировать, только если нажат чек-бокс
+                                readOnly={!customerDidNotTakeChange}
+                                onChange={(e) => setActualChangeGiven(e.target.value)}
+                                className="form-input"
+                                style={{ fontWeight: 'bold' }}
+                            />
+                            {changeGiven > 0 && (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <label>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={customerDidNotTakeChange}
+                                            onChange={(e) => setCustomerDidNotTakeChange(e.target.checked)}
+                                            style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                                        />
+                                        <span style={{ verticalAlign: 'middle' }}>Клиент не забрал (всю) сдачу</span>
+                                    </label>
+                                    {customerDidNotTakeChange && (
+                                        <small style={{ display: 'block', marginTop: '4px', color: '#6c757d' }}>
+                                            Укажите в поле "Сдача" ту сумму, которую вы фактически выдали клиенту.
+                                        </small>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+            <button onClick={handleSubmitSale} className="btn btn-primary" style={{ float: 'right' }} disabled={cart.length === 0 || isSubmitting}>
+                {isSubmitting ? 'Оформление...' : 'Оформить продажу'}
+            </button>
             </div>
 
             {saleSuccessData && (
