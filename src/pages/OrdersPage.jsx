@@ -299,10 +299,18 @@ function OrdersPage() {
                                             <>
                                                 <div className="form-section">
                                                     <label>Базовая модель</label>
-                                                    <select className="form-select" value={detail.model_base_id} onChange={(e) => handleDetailChange(index, 'model_base_id', e.target.value)} required>
-                                                        <option value="">Выберите...</option>
-                                                        {baseModelOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                                    </select>
+                                                    <Select
+                                                        options={baseModelOptions}
+                                                        value={baseModelOptions.find(opt => opt.value === parseInt(detail.model_base_id))}
+                                                        onChange={(selectedOption) => handleDetailChange(index, 'model_base_id', selectedOption ? selectedOption.value : '')}
+                                                        placeholder="Выберите или начните ввод..."
+                                                        isClearable
+                                                        isSearchable
+                                                        required
+                                                        filterOption={(option, inputValue) => 
+                                                            option.label.toLowerCase().includes(inputValue.toLowerCase())
+                                                        }
+                                                    />
                                                 </div>
                                                 <div className="form-section">
                                                     <label>Память</label>

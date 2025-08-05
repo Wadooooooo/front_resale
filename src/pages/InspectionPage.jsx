@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AsyncSelect from 'react-select/async';
 import {
     getPhonesForInspection,
     getPhonesForBatteryTest,
@@ -44,6 +45,9 @@ function InspectionPage() {
     const [drainRate, setDrainRate] = useState(null);
     const [testResult, setTestResult] = useState(null); 
 
+    
+
+
 
     const loadData = async () => {
         try {
@@ -69,21 +73,7 @@ function InspectionPage() {
         loadData();
     }, []);
 
-
-    useEffect(() => {
-    // Создаем таймер
-    const timer = setTimeout(async () => {
-        if (modelNumber.length > 1) { // Начинаем поиск после 2-х символов
-            const suggestions = await searchModelNumbers(modelNumber);
-            setModelNumberSuggestions(suggestions);
-        } else {
-            setModelNumberSuggestions([]);
-        }
-    }, 300); // Задержка в 300 мс
-
-    // Очищаем таймер при каждом новом вводе
-    return () => clearTimeout(timer);
-}, [modelNumber]); // Этот хук зависит от ввода в поле номера модели
+    
 
 
     // --- 2. ЛОГИКА РАСЧЕТА РАСХОДА БАТАРЕИ (без изменений) ---
@@ -261,6 +251,25 @@ function InspectionPage() {
     };
     
 
+
+    const loadModelNumberOptions = (inputValue, callback) => {
+        if (!inputValue || inputValue.length < 2) {
+            callback([]);
+            return;
+        }
+        // Эта обертка нужна, чтобы запросы не отправлялись на каждую букву
+        setTimeout(async () => {
+            try {
+                const suggestions = await searchModelNumbers(inputValue);
+                const options = suggestions.map(s => ({ value: s.name, label: s.name }));
+                callback(options);
+            } catch (error) {
+                console.error("Failed to load model numbers", error);
+                callback([]);
+            }
+        }, 300); // Задержка в 300 мс
+    };
+
     if (loading) return <h2>Загрузка...</h2>;
 
     return (
@@ -350,18 +359,14 @@ function InspectionPage() {
                                 </div>
                                 <div className="form-section">
                                     <label>Номер модели:</label>
-                                    <input 
-                                        type="text" 
-                                        className="form-input" 
-                                        value={modelNumber} 
-                                        onChange={(e) => setModelNumber(e.target.value)}
-                                        list="model-number-suggestions"
+                                    <AsyncSelect
+                                        cacheOptions
+                                        loadOptions={loadModelNumberOptions}
+                                        defaultOptions
+                                        value={modelNumber ? { value: modelNumber, label: modelNumber } : null}
+                                        onChange={(selectedOption) => setModelNumber(selectedOption ? selectedOption.value : '')}
+                                        placeholder="Начните ввод для поиска..."
                                     />
-                                    <datalist id="model-number-suggestions">
-                                        {modelNumberSuggestions.map(suggestion => (
-                                            <option key={suggestion.id} value={suggestion.name} />
-                                        ))}
-                                    </datalist>
                                 </div>
                                                                 <hr />
                                 <h3>Чек-лист</h3>
