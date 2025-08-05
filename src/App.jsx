@@ -29,6 +29,7 @@ import StockPage from './pages/StockPage.jsx';
 import TrafficSourcesPage from './pages/TrafficSourcesPage.jsx';
 import MySalesPage from './pages/MySalesPage.jsx';  
 
+
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
 function MainLayout() {
   const { logout, hasPermission } = useAuth();

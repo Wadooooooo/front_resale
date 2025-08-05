@@ -581,3 +581,8 @@ export const endShift = async () => {
     return response.data;
 };
 
+export const paySalary = async (userId, paymentData) => {
+    const response = await axios.post(`${API_BASE_URL}/reports/payroll/pay?user_id=${userId}`, paymentData);
+    return response.data;
+};
+
