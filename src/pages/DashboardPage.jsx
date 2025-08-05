@@ -7,12 +7,14 @@ import {
     getDashboardReadyForSale,
     getNotes,          
     createNote,        
-    updateNoteStatus   
+    updateNoteStatus,
+    getActiveShift, 
+    startShift, 
+    endShift
 } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 import './DashboardPage.css';
 import { useAuth } from '../context/AuthContext';
-
 
 // Карточка для отображения статистики
 const StatCard = ({ title, value, isCurrency = true }) => (
@@ -34,19 +36,26 @@ function DashboardPage() {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [showAllNotes, setShowAllNotes] = useState(false);
     const { user, hasPermission } = useAuth();
+    const [activeShift, setActiveShift] = useState(null);
+
+    const [notification, setNotification] = useState({ isOpen: false, message: '' });
+    const [isConfirmEndShiftModalOpen, setIsConfirmEndShiftModalOpen] = useState(false);
+
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [summaryData, readyForSaleData, notesData] = await Promise.all([
+                const [summaryData, readyForSaleData, notesData, shiftData] = await Promise.all([
                     getDashboardSalesSummary(),
                     getDashboardReadyForSale(),
-                    getNotes(showAllNotes)
+                    getNotes(showAllNotes),
+                    getActiveShift()
                 ]);
                 setSummary(summaryData);
                 setReadyForSale(readyForSaleData);
                 setNotes(notesData);
+                setActiveShift(shiftData);
             } catch (error) {
                 console.error("Ошибка загрузки данных для дэшборда:", error);
             } finally {
@@ -55,6 +64,32 @@ function DashboardPage() {
         };
         loadData();
     }, [showAllNotes]);
+
+    const handleStartShift = async () => {
+        try {
+            const shift = await startShift();
+            setActiveShift(shift);
+            setNotification({ isOpen: true, message: 'Смена успешно начата!' });
+        } catch (err) {
+            setNotification({ isOpen: true, message: err.response?.data?.detail || 'Не удалось начать смену.' });
+        }
+    };
+
+    const handleEndShift = () => {
+        setIsConfirmEndShiftModalOpen(true);
+    };
+
+    // Эта новая функция будет вызвана при нажатии "Да" в окне подтверждения
+    const confirmAndEndShift = async () => {
+        setIsConfirmEndShiftModalOpen(false); // Сначала закрываем окно
+        try {
+            await endShift();
+            setActiveShift(null);
+            setNotification({ isOpen: true, message: 'Смена успешно завершена!' });
+        } catch (err) {
+            setNotification({ isOpen: true, message: err.response?.data?.detail || 'Не удалось завершить смену.' });
+        }
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -68,7 +103,7 @@ function DashboardPage() {
         if (!newNoteContent.trim()) return;
         try {
             const newNote = await createNote(newNoteContent);
-            setNotes([newNote, ...notes]); // Добавляем новую заметку в начало списка
+            setNotes([newNote, ...notes]);
             setNewNoteContent('');
         } catch (error) {
             alert('Не удалось добавить заметку.');
@@ -78,7 +113,6 @@ function DashboardPage() {
     const handleToggleNote = async (noteId, currentStatus) => {
         try {
             const updatedNote = await updateNoteStatus(noteId, !currentStatus);
-            // Обновляем заметку в списке
             setNotes(notes.map(n => n.id === noteId ? updatedNote : n));
         } catch (error) {
             alert('Не удалось обновить статус заметки.');
@@ -89,7 +123,14 @@ function DashboardPage() {
 
     return (
         <div>
-            <h1>Рабочий стол продавца</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h1>Рабочий стол продавца</h1>
+                {activeShift ? (
+                    <button onClick={handleEndShift} className="btn btn-danger" style={{ marginTop: 0 }}>Завершить смену</button>
+                ) : (
+                    <button onClick={handleStartShift} className="btn btn-primary" style={{ marginTop: 0 }}>Начать смену</button>
+                )}
+            </div>
             
             <div className="dashboard-grid">
                 {/* Левая колонка */}
@@ -171,7 +212,6 @@ function DashboardPage() {
                         </form>
                         <div className="notes-list">
                             {notes.map(note => {
-                                // Определяем, может ли текущий пользователь изменить статус этой заметки
                                 const canToggle = !note.is_completed ||
                                                 (note.completed_by && user && user.id === note.completed_by.id) ||
                                                 hasPermission('manage_inventory');
@@ -181,7 +221,7 @@ function DashboardPage() {
                                             type="checkbox"
                                             checked={note.is_completed}
                                             onChange={() => handleToggleNote(note.id, note.is_completed)}
-                                            disabled={!canToggle} // <-- ДОБАВЛЕНО ЭТО СВОЙСТВО
+                                            disabled={!canToggle}
                                         />
                                         <div className="note-content">
                                             <p>{note.content}</p>
@@ -193,14 +233,47 @@ function DashboardPage() {
                                             </small>
                                         </div>
                                     </div>
+                                
                                 );
                             })}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* VVV ДОБАВЬТЕ ВЕСЬ ЭТОТ БЛОК VVV */}
+            {/* Окно для уведомлений */}
+            {notification.isOpen && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog">
+                        <h3>Уведомление</h3>
+                        <p>{notification.message}</p>
+                        <div className="confirm-modal-buttons">
+                            <button 
+                                onClick={() => setNotification({ isOpen: false, message: '' })} 
+                                className="btn btn-primary"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Окно для подтверждения завершения смены */}
+            {isConfirmEndShiftModalOpen && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog">
+                        <h3>Подтверждение</h3>
+                        <p>Вы уверены, что хотите завершить смену?</p>
+                        <div className="confirm-modal-buttons">
+                            <button onClick={confirmAndEndShift} className="btn btn-danger">Да, завершить</button>
+                            <button onClick={() => setIsConfirmEndShiftModalOpen(false)} className="btn btn-secondary">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-
 export default DashboardPage;

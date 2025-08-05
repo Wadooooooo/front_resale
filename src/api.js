@@ -555,3 +555,29 @@ export const returnLoanerPhone = async (loanerLogId) => {
     return response.data;
 };
 
+export const getPayrollReport = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/reports/payroll`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+// --- API для Смен ---
+export const getActiveShift = async () => {
+    const response = await axios.get(`${API_BASE_URL}/shifts/active`);
+    return response.data;
+};
+
+export const startShift = async () => {
+    const response = await axios.post(`${API_BASE_URL}/shifts/start`);
+    return response.data;
+};
+
+export const endShift = async () => {
+    const response = await axios.put(`${API_BASE_URL}/shifts/end`);
+    return response.data;
+};
+

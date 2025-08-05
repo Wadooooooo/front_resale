@@ -18,6 +18,7 @@ import SalesPage from './pages/SalesPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
 import CashFlowPage from './pages/CashFlowPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
+import PayrollPage from './pages/PayrollPage.jsx';
 import AccessoryCompatibilityPage from './pages/AccessoryCompatibilityPage.jsx';
 import PhoneHistoryPage from './pages/PhoneHistoryPage.jsx';
 import ReturnsPage from './pages/ReturnsPage.jsx';
@@ -53,6 +54,7 @@ function MainLayout() {
             {hasPermission('manage_pricing') && <li className="nav-item"><NavLink to="/pricing" className="nav-link">Цены</NavLink></li>}
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Финансы</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/payroll" className="nav-link">Зарплаты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
         </ul>
@@ -82,6 +84,7 @@ function MainLayout() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/cashflow" element={<CashFlowPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/payroll" element={<PayrollPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           {/* Если ни один путь не совпал, перенаправляем на рабочий стол */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
