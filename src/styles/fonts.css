@@ -1,0 +1,11 @@
+html {
+  font-size: 16px;
+}
+
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('../fonts/Ubuntu-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
