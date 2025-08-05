@@ -61,7 +61,7 @@
 .main-content {
     flex-grow: 1;
     padding: 20px;
-    overflow-y: auto; /* Включает прокрутку ТОЛЬКО для этого блока */
+    overflow-y: auto; /* <--- И эту строку верните */
 }
 
 .logout-container {
