@@ -586,3 +586,13 @@ export const paySalary = async (userId, paymentData) => {
     return response.data;
 };
 
+export const getFinancialSnapshots = async () => {
+    const response = await axios.get(`${API_BASE_URL}/reports/financial-snapshots`);
+    return response.data;
+};
+
+export const createFinancialSnapshot = async () => {
+    const response = await axios.post(`${API_BASE_URL}/reports/financial-snapshots`);
+    return response.data;
+};
+
