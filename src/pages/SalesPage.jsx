@@ -147,10 +147,34 @@ function SalesPage() {
     const [customerDidNotTakeChange, setCustomerDidNotTakeChange] = useState(false);
     const [actualChangeGiven, setActualChangeGiven] = useState('');
     const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+    const [priceAdjustment, setPriceAdjustment] = useState(0); // Сумма наценки
+    const [originalPrice, setOriginalPrice] = useState(0);
     const [saleSuccessData, setSaleSuccessData] = useState(null);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const { hasPermission } = useAuth();
     const [phoneForCalculator, setPhoneForCalculator] = useState(null);
+
+    useEffect(() => {
+        const phoneInCart = cart.find(item => item.product_type === 'Телефон');
+        if (!phoneInCart) {
+            setPriceAdjustment(0);
+            return;
+        }
+
+        // Сохраняем оригинальную цену при первом добавлении
+        if (originalPrice === 0) {
+            setOriginalPrice(phoneInCart.price);
+        }
+
+        if (paymentMethod.value === 'КАРТА' || paymentMethod.value === 'СБП') {
+            const cardPrice = calculatePrice(originalPrice, creditOptions['Картой']);
+            const adjustment = cardPrice - originalPrice;
+            setPriceAdjustment(adjustment);
+        } else {
+            setPriceAdjustment(0); // Сбрасываем наценку для наличных
+        }
+
+    }, [paymentMethod, cart, originalPrice]);
 
     useEffect(() => {
         // Ищем первый телефон в корзине, чтобы использовать его цену для расчетов
@@ -337,7 +361,7 @@ function SalesPage() {
     };
     
     const subtotal = cart.reduce((total, item) => total + ((item.isGift ? 0 : parseFloat(item.price)) * item.quantity), 0);
-    const totalAmount = subtotal - (parseFloat(discount) || 0);
+    const totalAmount = subtotal + priceAdjustment - (parseFloat(discount) || 0);
     const handleCashReceivedChange = (e) => {
         const received = e.target.value;
         setCashReceived(received);
@@ -527,6 +551,10 @@ function SalesPage() {
                 <div className="form-section"><label>Примечание к продаже</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="form-input" rows="2"></textarea></div>
                 <div className="sale-total">
                     <p>Сумма: <span>{subtotal.toFixed(2)} руб.</span></p>
+                    {priceAdjustment > 0 && (
+                        <p>Наценка за эквайринг: <span>+{priceAdjustment.toFixed(2)} руб.</span></p>
+                    )}
+
                     <p>Скидка: <span>-{(parseFloat(discount) || 0).toFixed(2)} руб.</span></p>
                     <h3>Итого: <span>{totalAmount.toFixed(2)} руб.</span></h3>
                 </div>

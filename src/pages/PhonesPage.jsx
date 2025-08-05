@@ -207,7 +207,7 @@ const ModelManagementTab = () => {
                         <tr key={`${combo.model_name_id}-${combo.color_id}`}>
                             <td>{combo.model_name}</td>
                             <td>{combo.color_name}</td>
-                            <td>{combo.image_url || 'Не задана'}</td>
+                            <td className="url-cell">{combo.image_url || 'Не задана'}</td>
                             <td>
                                 <button onClick={() => setEditingModel(combo)} className="btn btn-secondary btn-compact">
                                     Изменить фото
