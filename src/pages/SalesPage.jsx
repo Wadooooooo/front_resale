@@ -337,8 +337,6 @@ function SalesPage() {
             account_id: selectedAccountId.value,
             discount: parseFloat(discount) || 0,
             cash_received: cashReceived ? parseFloat(cashReceived) : null,
-            change_given: (changeGiven > 0 && !customerDidNotTakeChange) ? changeGiven : null,
-            cash_received: cashReceived ? parseFloat(cashReceived) : null,
             // Определяем, какую сдачу реально выдали
             change_given: customerDidNotTakeChange 
                 ? (actualChangeGiven ? parseFloat(actualChangeGiven) : 0)

@@ -6,51 +6,145 @@ import './OrdersPage.css'; // Используем общие стили
 const formatDate = (dateString) => new Date(dateString).toLocaleString('ru-RU');
 const formatCurrency = (amount) => parseFloat(amount).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
 
-// VVV ЭТОТ БЛОК ОТСУТСТВОВАЛ: ОПИСАНИЕ МОДАЛЬНОГО ОКНА VVV
 const SnapshotDetailsModal = ({ snapshot, onClose }) => {
     if (!snapshot || !snapshot.details) return null;
 
-    const { inventory = [], goods_in_transit = [] } = snapshot.details;
+    const { inventory = [], goods_in_transit = [], cash_by_account = [] } = snapshot.details;
 
-    // VVV ИЗМЕНЕНИЯ НАЧИНАЮТСЯ ЗДЕСЬ VVV
+    const formatCurrency = (amount) => parseFloat(amount).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
+
     return ReactDOM.createPortal(
         <div className="confirm-modal-overlay">
-            <div className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '800px' }}>
+            <div className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '1000px' }}>
                 <h3>Детализация среза от {formatDate(snapshot.snapshot_date)}</h3>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
+                    
+                    {/* Колонка для денег */}
+                    <div>
+                        <h4>Деньги в кассе ({cash_by_account.length} счетов)</h4>
+                        {/* VVV НАЧАЛО ИЗМЕНЕНИЙ ДЛЯ ПЕРВОЙ ТАБЛИЦЫ VVV */}
+                        <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                            <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '60%' }} />
+                                    <col style={{ width: '40%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>Счет</th>
+                                        <th style={{ textAlign: 'right' }}>Баланс</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {cash_by_account.map(item => (
+                                        <tr key={`cash-${item.account_name}`}>
+                                            <td>{item.account_name}</td>
+                                            <td style={{ textAlign: 'right' }}>{item.balance.toLocaleString('ru-RU')} руб.</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '60%' }} />
+                                <col style={{ width: '40%' }} />
+                            </colgroup>
+                            <tfoot>
+                                <tr>
+                                    <td style={{ fontWeight: 'bold' }}>Итого:</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(snapshot.cash_balance)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        {/* ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ */}
+                    </div>
+
+                    {/* Колонка для склада */}
                     <div>
                         <h4>Склад ({inventory.length} шт.)</h4>
-                        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                            <table className="orders-table">
-                                <thead><tr><th>ID</th><th>S/N</th><th style={{textAlign: 'right'}}>Цена</th></tr></thead>
+                        {/* VVV НАЧАЛО ИЗМЕНЕНИЙ ДЛЯ ВТОРОЙ ТАБЛИЦЫ VVV */}
+                        <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                             <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '15%' }} />
+                                    <col style={{ width: '50%' }} />
+                                    <col style={{ width: '35%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>S/N</th>
+                                        <th style={{ textAlign: 'right' }}>Цена</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     {inventory.map(item => (
                                         <tr key={`inv-${item.id}`}>
                                             <td>{item.id}</td>
-                                            <td>{item.sn || 'б/н'}</td>
-                                            <td style={{textAlign: 'right'}}>{item.price.toLocaleString('ru-RU')} руб.</td>
+                                            <td className="url-cell">{item.sn || 'б/н'}</td>
+                                            <td style={{ textAlign: 'right' }}>{item.price.toLocaleString('ru-RU')} руб.</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                        <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '15%' }} />
+                                <col style={{ width: '50%' }} />
+                                <col style={{ width: '35%' }} />
+                            </colgroup>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan="2" style={{ fontWeight: 'bold' }}>Итого:</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(snapshot.inventory_value)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        {/* ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ */}
                     </div>
+                    
+                    {/* Колонка для товаров в пути */}
                     <div>
                         <h4>Товары в пути ({goods_in_transit.length} заказ.)</h4>
-                         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                            <table className="orders-table">
-                                <thead><tr><th>ID Заказа</th><th style={{textAlign: 'right'}}>Сумма</th></tr></thead>
+                        {/* VVV НАЧАЛО ИЗМЕНЕНИЙ ДЛЯ ТРЕТЬЕЙ ТАБЛИЦЫ VVV */}
+                         <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                            <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '50%' }} />
+                                    <col style={{ width: '50%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>ID Заказа</th>
+                                        <th style={{ textAlign: 'right' }}>Сумма</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     {goods_in_transit.map(item => (
                                         <tr key={`transit-${item.order_id}`}>
                                             <td>{item.order_id}</td>
-                                            <td style={{textAlign: 'right'}}>{item.value.toLocaleString('ru-RU')} руб.</td>
+                                            <td style={{ textAlign: 'right' }}>{item.value.toLocaleString('ru-RU')} руб.</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                        <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '50%' }} />
+                                <col style={{ width: '50%' }} />
+                            </colgroup>
+                            <tfoot>
+                                <tr>
+                                    <td style={{ fontWeight: 'bold' }}>Итого:</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(snapshot.goods_in_transit_value)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        {/* ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ */}
                     </div>
                 </div>
 
@@ -61,7 +155,6 @@ const SnapshotDetailsModal = ({ snapshot, onClose }) => {
         </div>,
         document.getElementById('modal-root')
     );
-    // ^^^ ИЗМЕНЕНИЯ ЗАКАНЧИВАЮТСЯ ЗДЕСЬ ^^^
 };
 
 
