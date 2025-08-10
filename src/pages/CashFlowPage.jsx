@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Select, { components } from 'react-select';
 import { 
     getCashFlows, createCashFlow, getOperationCategories, 
-    getCounterparties, getAccounts, createAccount, createCounterparty,
+    getCounterparties, getAccounts, createCounterparty,
     getTotalBalance,
-    getInventoryValuation 
+    getInventoryValuation, getAccountsWithBalances
 } from '../api';
 import './OrdersPage.css';
 
@@ -74,21 +74,21 @@ function CashFlowPage() {
     const loadData = async () => {
         try {
             setLoading(true);
-            // VVV ИСПРАВЛЕНИЕ ЗДЕСЬ: Добавь inventoryData в список VVV
-            const [transData, catData, countData, accData, totalBalanceData, inventoryData] = await Promise.all([
+            // VVV ИЗМЕНИТЕ ЭТУ СТРОКУ VVV
+            const [transData, catData, countData, accWithBalancesData, totalBalanceData, inventoryData] = await Promise.all([
                 getCashFlows(), 
                 getOperationCategories(), 
                 getCounterparties(), 
-                getAccounts(),
+                getAccountsWithBalances(), 
                 getTotalBalance(),
                 getInventoryValuation()
             ]);
             setTransactions(transData);
             setCategories(catData);
             setCounterparties(countData);
-            setAccounts(accData);
+            setAccounts(accWithBalancesData); 
             setTotalBalance(totalBalanceData.total_balance);
-            setInventoryValue(inventoryData.total_valuation); // Теперь эта строка будет работать
+            setInventoryValue(inventoryData.total_valuation);
             
         } catch (err) {
             console.error("!!! ПОЛНАЯ ОШИБКА ЗАГРУЗКИ:", err);
@@ -227,11 +227,11 @@ function CashFlowPage() {
                             {parseFloat(totalBalance).toLocaleString('ru-RU')}
                         </p>
                     </div>
-                    {accountBalances.map(account => (
+                    {accounts.map(account => (
                         <div key={account.id} className="balance-card">
                             <h4>{account.name}</h4>
                             <p className={account.balance >= 0 ? 'balance-positive' : 'balance-negative'}>
-                                {account.balance.toLocaleString('ru-RU')}
+                                {parseFloat(account.balance).toLocaleString('ru-RU')}
                             </p>
                         </div>
                     ))}

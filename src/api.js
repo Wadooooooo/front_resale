@@ -596,3 +596,8 @@ export const createFinancialSnapshot = async () => {
     return response.data;
 };
 
+export const getAccountsWithBalances = async () => {
+    const response = await axios.get(`${API_BASE_URL}/accounts/balances`);
+    return response.data;
+};
+
