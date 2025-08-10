@@ -13,12 +13,19 @@ export const printReceipt = (saleData) => {
 
     const saleDate = new Date(saleData.sale_date || Date.now());
     const formattedDate = saleDate.toLocaleDateString('ru-RU');
-    const totalAmount = (saleData.total_amount || 0).toFixed(2);
-    
-    // Считаем подытог и скидку
-    const subtotal = saleData.details.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0).toFixed(2);
-    const discountAmount = (saleData.discount || 0).toFixed(2);
 
+    const totalAmountNum = parseFloat(saleData.total_amount) || 0;
+    const subtotalNum = saleData.details.reduce((sum, item) => {
+        const price = parseFloat(item.unit_price) || 0;
+        const quantity = parseInt(item.quantity, 10) || 0;
+        return sum + (price * quantity);
+    }, 0);
+    const discountNum = parseFloat(saleData.discount) || 0;
+    const paymentAdjustment = totalAmountNum - (subtotalNum - discountNum);
+
+    const totalAmount = totalAmountNum.toFixed(2);
+    const subtotal = subtotalNum.toFixed(2);
+    const discountAmount = discountNum.toFixed(2);
 
     const receiptHtml = `
         <!DOCTYPE html>
@@ -87,7 +94,10 @@ export const printReceipt = (saleData) => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${saleData.details.map((item, index) => `
+                            ${saleData.details.map((item, index) => {
+                                const price = parseFloat(item.unit_price) || 0;
+                                const quantity = parseInt(item.quantity, 10) || 0;
+                                return `
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td class="text-left">
@@ -96,11 +106,12 @@ export const printReceipt = (saleData) => {
                                     </td>
                                     <td>${item.model_number || 'б/н'}</td>
                                     <td>${getWarranty(item)}</td>
-                                    <td>${item.quantity}</td>
-                                    <td class="text-right">${(item.unit_price || 0).toFixed(2)}</td>
-                                    <td class="text-right">${(item.quantity * (item.unit_price || 0)).toFixed(2)}</td>
+                                    <td>${quantity}</td>
+                                    <td class="text-right">${price.toFixed(2)}</td>
+                                    <td class="text-right">${(quantity * price).toFixed(2)}</td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                     
@@ -111,6 +122,12 @@ export const printReceipt = (saleData) => {
                         <div class="summary-total">
                             <p>Сумма: ${subtotal}</p>
                             <p>Сумма скидки: ${discountAmount}</p>
+                            ${
+                                paymentAdjustment > 0.01
+                                // ИСПРАВЛЕНИЕ: Неправильный обратный апостроф
+                                ? `<p>Сервисный сбор: ${paymentAdjustment.toFixed(2)}</p>`
+                                : ''
+                            }
                             <p>К оплате: ${totalAmount}</p>
                         </div>
                     </div>
@@ -140,3 +157,5 @@ export const printReceipt = (saleData) => {
         printWindow.close();
     }, 250);
 };
+
+// ИСПРАВЛЕНИЕ: Удалена лишняя закрывающая фигурная скобка
