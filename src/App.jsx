@@ -28,6 +28,7 @@ import EmployeesPage from './pages/EmployeesPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StockPage from './pages/StockPage.jsx';
 import TrafficSourcesPage from './pages/TrafficSourcesPage.jsx';
+import PendingSalesPage from './pages/PendingSalesPage.jsx';
 import MySalesPage from './pages/MySalesPage.jsx';  
 
 
@@ -44,6 +45,7 @@ function MainLayout() {
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/stock" className="nav-link">Каталог</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
+            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/pending-sales" className="nav-link">Ожидают оплаты</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/my-sales" className="nav-link">Мои продажи</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && <li className="nav-item"><NavLink to="/warehouse" className="nav-link">Склад</NavLink></li>}
@@ -84,6 +86,7 @@ function MainLayout() {
           <Route path="/compatibility" element={<AccessoryCompatibilityPage />} />
           <Route path="/traffic-sources" element={<TrafficSourcesPage />} />
           <Route path="/sales" element={<SalesPage />} />
+          <Route path="/pending-sales" element={<PendingSalesPage />} />
           <Route path="/my-sales" element={<MySalesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/cashflow" element={<CashFlowPage />} />

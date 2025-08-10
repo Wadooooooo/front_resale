@@ -153,6 +153,7 @@ function SalesPage() {
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const { hasPermission } = useAuth();
     const [phoneForCalculator, setPhoneForCalculator] = useState(null);
+    const [isDeferred, setIsDeferred] = useState(false);
 
     useEffect(() => {
         const phoneInCart = cart.find(item => item.product_type === 'Телефон');
@@ -319,7 +320,7 @@ function SalesPage() {
     };
 
     const handleSubmitSale = async () => {
-        if (!selectedAccountId) {
+        if (!isDeferred && !selectedAccountId) {
             setError('Пожалуйста, выберите счет для зачисления оплаты.');
             return;
         }
@@ -337,10 +338,10 @@ function SalesPage() {
             account_id: selectedAccountId.value,
             discount: parseFloat(discount) || 0,
             cash_received: cashReceived ? parseFloat(cashReceived) : null,
-            // Определяем, какую сдачу реально выдали
             change_given: customerDidNotTakeChange 
                 ? (actualChangeGiven ? parseFloat(actualChangeGiven) : 0)
-                : (changeGiven > 0 ? changeGiven : null)
+                : (changeGiven > 0 ? changeGiven : null),
+            is_deferred_payment: isDeferred
         };
         try {
             const saleResponse = await createSale(saleData);
@@ -518,6 +519,22 @@ function SalesPage() {
 
             <div className="order-page-container">
                 <h2>2. Укажите детали продажи</h2>
+                <div className="form-section" style={{ 
+                    backgroundColor: isDeferred ? '#e7f3ff' : 'transparent', 
+                    padding: '1rem', 
+                    borderRadius: '0.5rem', 
+                    marginBottom: '1.5rem' 
+                }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <input
+                            type="checkbox"
+                            checked={isDeferred}
+                            onChange={(e) => setIsDeferred(e.target.checked)}
+                            style={{ width: '20px', height: '20px', marginRight: '10px' }}
+                        />
+                        Авито Доставка (отложенный платёж)
+                    </label>
+                </div>
                 <div className="details-grid">
                     <div className="form-section"><label>Клиент</label><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <Select 
@@ -547,60 +564,65 @@ function SalesPage() {
                     <div className="form-section"><label>Скидка (руб.)</label><input type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} className="form-input" placeholder="0" /></div>
                 </div>
                 <div className="form-section"><label>Примечание к продаже</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="form-input" rows="2"></textarea></div>
-                <div className="sale-total">
-                    <p>Сумма: <span>{subtotal.toFixed(2)} руб.</span></p>
-                    {priceAdjustment > 0 && (
-                        <p>Наценка за эквайринг: <span>+{priceAdjustment.toFixed(2)} руб.</span></p>
-                    )}
+                    {!isDeferred && (
+                    <>
+                    <div className="sale-total">
+                        <p>Сумма: <span>{subtotal.toFixed(2)} руб.</span></p>
+                        {priceAdjustment > 0 && (
+                            <p>Наценка за эквайринг: <span>+{priceAdjustment.toFixed(2)} руб.</span></p>
+                        )}
 
-                    <p>Скидка: <span>-{(parseFloat(discount) || 0).toFixed(2)} руб.</span></p>
-                    <h3>Итого: <span>{totalAmount.toFixed(2)} руб.</span></h3>
-                </div>
-                {paymentMethod.value === 'НАЛИЧНЫЕ' && (
-                    <div className="details-grid" style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                        <div className="form-section">
-                            <label>Получено от клиента (руб.)</label>
-                            <input 
-                                type="number" 
-                                value={cashReceived} 
-                                onChange={handleCashReceivedChange} 
-                                className="form-input" 
-                                placeholder={totalAmount.toFixed(2)}
-                            />
-                        </div>
-                        <div className="form-section">
-                            <label>Сдача (руб.)</label>
-                            <input 
-                                type="number"
-                                step="0.01"
-                                // Если чек-бокс нажат - используем ручной ввод, иначе - авто-расчет
-                                value={customerDidNotTakeChange ? actualChangeGiven : changeGiven.toFixed(2)}
-                                // Поле можно редактировать, только если нажат чек-бокс
-                                readOnly={!customerDidNotTakeChange}
-                                onChange={(e) => setActualChangeGiven(e.target.value)}
-                                className="form-input"
-                                style={{ fontWeight: 'bold' }}
-                            />
-                            {changeGiven > 0 && (
-                                <div style={{ marginTop: '0.5rem' }}>
-                                    <label>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={customerDidNotTakeChange}
-                                            onChange={(e) => setCustomerDidNotTakeChange(e.target.checked)}
-                                            style={{ marginRight: '8px', verticalAlign: 'middle' }}
-                                        />
-                                        <span style={{ verticalAlign: 'middle' }}>Клиент не забрал (всю) сдачу</span>
-                                    </label>
-                                    {customerDidNotTakeChange && (
-                                        <small style={{ display: 'block', marginTop: '4px', color: '#6c757d' }}>
-                                            Укажите в поле "Сдача" ту сумму, которую вы фактически выдали клиенту.
-                                        </small>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        <p>Скидка: <span>-{(parseFloat(discount) || 0).toFixed(2)} руб.</span></p>
+                        <h3>Итого: <span>{totalAmount.toFixed(2)} руб.</span></h3>
                     </div>
+                    {paymentMethod.value === 'НАЛИЧНЫЕ' && (
+                        <div className="details-grid" style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                            <div className="form-section">
+                                <label>Получено от клиента (руб.)</label>
+                                <input 
+                                    type="number" 
+                                    value={cashReceived} 
+                                    onChange={handleCashReceivedChange} 
+                                    className="form-input" 
+                                    placeholder={totalAmount.toFixed(2)}
+                                />
+                            </div>
+                            <div className="form-section">
+                                <label>Сдача (руб.)</label>
+                                <input 
+                                    type="number"
+                                    step="0.01"
+                                    // Если чек-бокс нажат - используем ручной ввод, иначе - авто-расчет
+                                    value={customerDidNotTakeChange ? actualChangeGiven : changeGiven.toFixed(2)}
+                                    // Поле можно редактировать, только если нажат чек-бокс
+                                    readOnly={!customerDidNotTakeChange}
+                                    onChange={(e) => setActualChangeGiven(e.target.value)}
+                                    className="form-input"
+                                    style={{ fontWeight: 'bold' }}
+                                />
+                                {changeGiven > 0 && (
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                        <label>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={customerDidNotTakeChange}
+                                                onChange={(e) => setCustomerDidNotTakeChange(e.target.checked)}
+                                                style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                                            />
+                                            <span style={{ verticalAlign: 'middle' }}>Клиент не забрал (всю) сдачу</span>
+                                        </label>
+                                        {customerDidNotTakeChange && (
+                                            <small style={{ display: 'block', marginTop: '4px', color: '#6c757d' }}>
+                                                Укажите в поле "Сдача" ту сумму, которую вы фактически выдали клиенту.
+                                            </small>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        )}
+
+                    </>
                 )}
 
             <button onClick={handleSubmitSale} className="btn btn-primary" style={{ float: 'right' }} disabled={cart.length === 0 || isSubmitting}>

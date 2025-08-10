@@ -229,6 +229,18 @@ export const createSale = async (saleData) => {
     return response.data;
 };
 
+export const getPendingSales = async () => {
+    const response = await axios.get(`${API_BASE_URL}/sales/pending`);
+    return response.data;
+};
+
+export const finalizeSale = async (saleId, accountId) => {
+    const response = await axios.post(`${API_BASE_URL}/sales/${saleId}/finalize-payment`, {
+        account_id: accountId
+    });
+    return response.data;
+};
+
 export const addPhonePrice = async (modelId, priceData) => {
     const response = await axios.post(`${API_BASE_URL}/models/${modelId}/prices`, priceData);
     return response.data;
