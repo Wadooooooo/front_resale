@@ -103,6 +103,7 @@ function SalesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deliveryMethod, setDeliveryMethod] = useState("");  
     const [saleSuccessData, setSaleSuccessData] = useState(null);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);  
     const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -285,7 +286,9 @@ function SalesPage() {
     // Обработчик отправки формы
     const handleSubmitSale = async () => {
         if (cart.length === 0) { setError('Корзина пуста.'); return; }
-        if (Math.abs(remainingBalance) > 0.01) {
+        
+        // ПРОВЕРКА 1: Используем 'deliveryMethod' вместо 'isPendingSale'
+        if (!deliveryMethod && Math.abs(remainingBalance) > 0.01) {
             setError(`Сумма платежей (${totalPaid.toFixed(2)}) не совпадает с итоговой суммой чека (${totalAmount.toFixed(2)}).`);
             return;
         }
@@ -295,12 +298,15 @@ function SalesPage() {
         const saleData = {
             customer_id: selectedCustomerId ? selectedCustomerId.value : null,
             notes,
+            // ПРОВЕРКА 2: Отправляем 'delivery_method' вместо 'is_pending'
+            delivery_method: deliveryMethod || null,
             details: cart.map(item => ({
                 warehouse_id: item.warehouse_id,
                 quantity: item.quantity,
                 unit_price: item.isGift ? 0 : item.price
             })),
-            payments: payments.map(p => ({
+            // ПРОВЕРКА 3: Используем 'deliveryMethod' для логики платежей
+            payments: deliveryMethod ? [] : payments.map(p => ({
                 account_id: p.account_id.value,
                 amount: parseFloat(p.amount),
                 payment_method: p.payment_method.value
@@ -308,7 +314,7 @@ function SalesPage() {
             discount: parseFloat(discount) || 0,
             cash_received: cashReceived ? parseFloat(cashReceived) : null,
             change_given: changeGiven > 0 ? changeGiven : null,
-            payment_adjustment: paymentAdjustment > 0 ? paymentAdjustment : null, // <--- УБЕДИТЕСЬ, ЧТО ЭТА СТРОКА ЕСТЬ
+            payment_adjustment: paymentAdjustment > 0 ? paymentAdjustment : null,
         };
 
         try {
@@ -326,6 +332,7 @@ function SalesPage() {
     const handleAddToCart = async (selectedOption) => {
         if (!selectedOption) return;
         const productToAdd = selectedOption.product;
+        setPhoneForCalculator(productToAdd);
         if (productToAdd.product_type === 'Телефон' && productToAdd.product_id) {
             try {
                 const phoneDetails = await getPhoneById(productToAdd.product_id);
@@ -521,9 +528,23 @@ function SalesPage() {
                 <div className="details-grid">
                     <div className="form-section"><label>Клиент</label><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Select options={customerOptions} value={selectedCustomerId} onChange={setSelectedCustomerId} placeholder="Розничный покупатель" isClearable styles={{ container: (base) => ({ ...base, flexGrow: 1 }) }} /><button onClick={() => setIsCustomerModalOpen(true)} className="btn btn-secondary" style={{ margin: 0, padding: '10px 15px' }}>+</button></div></div>
                     <div className="form-section"><label>Примечание к продаже</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="form-input" rows="2"></textarea></div>
+                    <div className="form-section" style={{ marginTop: '1rem', maxWidth: '400px' }}>
+                    <label>Способ получения</label>
+                    <select
+                        value={deliveryMethod}
+                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        className="form-select"
+                    >
+                        <option value="">Самовывоз (оплата сразу)</option>
+                        <option value="Авито Доставка">Авито Доставка</option>
+                        <option value="Курьер">Курьер</option>
+                        <option value="СДЭК">СДЭК</option>
+                        {/* Можете добавить любые другие варианты */}
+                    </select>
+                </div>
                 </div>
 
-                
+                {deliveryMethod === "" && (
                     <>
                         <h3>Платежи</h3>
                         {payments.map((payment, index) => {
@@ -620,7 +641,7 @@ function SalesPage() {
                         )}
                     </>
                 
-                
+                )}
                 <button onClick={handleSubmitSale} className="btn btn-primary" style={{ float: 'right' }} disabled={cart.length === 0 || isSubmitting}>
                     {isSubmitting ? 'Оформление...' : 'Оформить продажу'}
                 </button>
