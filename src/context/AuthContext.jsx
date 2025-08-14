@@ -6,52 +6,51 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(getAuthToken());
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // <--- Изначально загрузка
     const navigate = useNavigate();
 
-    // ИСПРАВЛЕННЫЙ useEffect
     useEffect(() => {
         const bootstrapAuth = async () => {
-            const currentToken = getAuthToken(); // 1. Получаем токен напрямую из localStorage
+            const currentToken = getAuthToken();
             if (currentToken) {
                 try {
-                    setAuthToken(currentToken); // Устанавливаем токен для будущих запросов axios
+                    // Устанавливаем токен для axios ДО первого запроса
+                    setAuthToken(currentToken); 
                     const userData = await getMe();
                     setUser(userData);
-                    setToken(currentToken); // Синхронизируем состояние
+                    setToken(currentToken);
                 } catch (error) {
                     console.error("Не удалось подтвердить токен, выход из системы.", error);
-                    setAuthToken(null); // Очищаем токен в localStorage
+                    setAuthToken(null);
                     setToken(null);
                     setUser(null);
                 }
             }
-            // В любом случае, после проверки, загрузка завершена
+            // В любом случае (даже если токена не было) убираем загрузку
             setLoading(false);
         };
 
         bootstrapAuth();
-    }, []); // 2. Пустой массив зависимостей означает, что этот код выполнится ТОЛЬКО ОДИН РАЗ
+    }, []); // Пустой массив зависимостей гарантирует, что это выполнится один раз
 
-    const login = async (username, password) => {
+    const login = useCallback(async (username, password) => {
         const data = await apiLogin(username, password);
         setAuthToken(data.access_token);
         setToken(data.access_token);
-        // После логина нужно загрузить данные пользователя
         const userData = await getMe();
         setUser(userData);
         navigate('/');
-    };
+    }, [navigate]);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setAuthToken(null);
         setToken(null);
         setUser(null);
         navigate('/login');
-    };
+    }, [navigate]);
 
     const hasPermission = useCallback((permissionCode) => {
         if (!user || !user.role || !user.role.permissions) {
@@ -64,11 +63,12 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
+            {/* Показываем приложение только после завершения начальной загрузки */}
             {!loading && children}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => {
+export function useAuth() {
     return useContext(AuthContext);
 };

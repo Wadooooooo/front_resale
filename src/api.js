@@ -613,3 +613,23 @@ export const getAccountsWithBalances = async () => {
     return response.data;
 };
 
+// --- API для Вкладов ---
+export const createDeposit = async (depositData) => {
+    const response = await axios.post(`${API_BASE_URL}/deposits`, depositData);
+    return response.data;
+};
+
+export const getDepositsDetails = async (targetDate) => {
+    const params = {};
+    if (targetDate) {
+        params.target_date = targetDate;
+    }
+    const response = await axios.get(`${API_BASE_URL}/deposits/details`, { params });
+    return response.data;
+};
+
+export const createDepositPayment = async (paymentData) => {
+    const response = await axios.post(`${API_BASE_URL}/deposits/pay`, paymentData);
+    return response.data;
+};
+

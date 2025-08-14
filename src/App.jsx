@@ -6,7 +6,7 @@ import { useAuth } from './context/AuthContext';
 import './styles/fonts.css';
 
 import './App.css';
-import './pages/OrdersPage.css';
+
 
 import LoginPage from './pages/LoginPage.jsx';
 import PhonesPage from './pages/PhonesPage.jsx';
@@ -30,6 +30,7 @@ import StockPage from './pages/StockPage.jsx';
 import TrafficSourcesPage from './pages/TrafficSourcesPage.jsx';
 import PendingSalesPage from './pages/PendingSalesPage.jsx';
 import MySalesPage from './pages/MySalesPage.jsx';  
+import DepositsPage from './pages/DepositsPage.jsx';
 
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
@@ -58,6 +59,7 @@ function MainLayout() {
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/traffic-sources" className="nav-link">Источники</NavLink></li>}
             {hasPermission('manage_pricing') && <li className="nav-item"><NavLink to="/pricing" className="nav-link">Цены</NavLink></li>}
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/cashflow" className="nav-link">Финансы</NavLink></li>}
+            {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/deposits" className="nav-link">Вклады</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/financial-report" className="nav-link">Рост компании</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/payroll" className="nav-link">Зарплаты</NavLink></li>}
@@ -90,6 +92,7 @@ function MainLayout() {
           <Route path="/my-sales" element={<MySalesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/cashflow" element={<CashFlowPage />} />
+          <Route path="/deposits" element={<DepositsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/financial-report" element={<FinancialReportPage />} />
           <Route path="/payroll" element={<PayrollPage />} />
