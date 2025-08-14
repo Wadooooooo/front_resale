@@ -158,7 +158,6 @@ function DepositsPage() {
                                 <th style={{textAlign: 'right'}}>Начислено %</th>
                                 <th style={{textAlign: 'right'}}>Выплачено</th>
                                 <th style={{textAlign: 'right', fontWeight: 'bold'}}>Остаток долга</th>
-                                <th style={{textAlign: 'right', fontWeight: 'bold'}}>Общий долг</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -173,13 +172,12 @@ function DepositsPage() {
                                     <td style={{textAlign: 'right', color: '#dc3545'}}>{formatCurrency(d.total_interest)}</td>
                                     <td style={{textAlign: 'right', color: '#198754'}}>{formatCurrency(d.total_paid)}</td>
                                     <td style={{textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(d.remaining_debt)}</td>
-                                    <td style={{textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(d.total_debt)}</td>
                                 </tr>
                             ))}
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colSpan="9" style={{textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem'}}>ИТОГО ОСТАТОК ДОЛГА:</td>
+                                <td colSpan="8" style={{textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem'}}>ИТОГО ОСТАТОК ДОЛГА:</td>
                                 <td style={{textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem'}}>{formatCurrency(totalDebt)}</td>
                                 <td></td>
                             </tr>
