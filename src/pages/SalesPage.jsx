@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Select from 'react-select';
 import { getProductsForSale, getCustomers, createSale, getAccounts, getCompatibleAccessories, getPhoneById, createCustomer, getTrafficSources } from '../api';
+import { formatCheckNumber } from '../utils/formatters';
+import { printWarrantyCard } from '../utils/printWarrantyCard';
 import { printReceipt } from '../utils/printReceipt';
 import './StockPage.css';
 
@@ -100,6 +102,7 @@ function SalesPage() {
     const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
     const [phoneForCalculator, setPhoneForCalculator] = useState(null);
     const [recommendedAccessories, setRecommendedAccessories] = useState([]);
+    const [isConfirmPrintModalOpen, setIsConfirmPrintModalOpen] = useState(false);
 
     const handleDiscountChange = (value) => {
         const numValue = parseInt(value, 10);
@@ -281,6 +284,11 @@ function SalesPage() {
         loadData();
     }, [loadData]);
 
+    const handleResetAndConfirm = () => {
+        // Просто открываем наше новое модальное окно
+        setIsConfirmPrintModalOpen(true);
+    };
+
     const handleCustomerCreated = (newCustomer) => {
         setIsCustomerModalOpen(false);
         const updatedCustomers = [...customers, newCustomer];
@@ -345,7 +353,7 @@ function SalesPage() {
     return (
         <div>
             <NewCustomerModal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} onCustomerCreated={handleCustomerCreated} existingCustomers={customers} />
-            {saleSuccessData && (<div className="confirm-modal-overlay"><div className="confirm-modal-dialog"><h3>Продажа №{saleSuccessData.id} успешно оформлена!</h3><p>Итоговая сумма: <strong>{parseFloat(saleSuccessData.total_amount).toLocaleString('ru-RU')} руб.</strong></p><div className="confirm-modal-buttons"><button onClick={() => printReceipt(saleSuccessData)} className="btn btn-secondary">Напечатать чек</button><button onClick={resetSaleForm} className="btn btn-primary">OK (Завершить)</button></div></div></div>)}
+            
             
             <h1>Продажа</h1>
             {error && <p className="form-message error">{error}</p>}
@@ -429,14 +437,53 @@ function SalesPage() {
                 {error && <p className="form-message error" style={{marginTop: '4rem'}}>{error}</p>}
             </div>
             
-            {saleSuccessData && (
+            {saleSuccessData && (() => {
+                // 1. Объявляем недостающую переменную
+                const saleHasPhone = saleSuccessData.details.some(item => item.serial_number);
+
+                return (
+                    <div className="confirm-modal-overlay">
+                        <div className="confirm-modal-dialog">
+                            <h3>Продажа №{formatCheckNumber(saleSuccessData.id)} успешно оформлена!</h3>
+                            <p>Итоговая сумма: <strong>{parseFloat(saleSuccessData.total_amount).toFixed(2)} руб.</strong></p>
+                            <div className="confirm-modal-buttons">
+                                <button onClick={() => printReceipt(saleSuccessData)} className="btn btn-secondary">Напечатать чек</button>
+                                
+                                {/* 2. Кнопка печати гарантии (теперь saleHasPhone определена) */}
+                                {saleHasPhone && (
+                                    <button onClick={() => printWarrantyCard(saleSuccessData)} className="btn btn-secondary">
+                                        Печать гарантии
+                                    </button>
+                                )}
+                                
+                                {/* 3. Кнопка "ОК" вызывает новую функцию с подтверждением */}
+                                <button onClick={handleResetAndConfirm} className="btn btn-primary">OK (Завершить)</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+            {isConfirmPrintModalOpen && (
                 <div className="confirm-modal-overlay">
                     <div className="confirm-modal-dialog">
-                        <h3>Продажа №{saleSuccessData.id} успешно оформлена!</h3>
-                        <p>Итоговая сумма: <strong>{parseFloat(saleSuccessData.total_amount).toFixed(2)} руб.</strong></p>
+                        <h3>Подтверждение</h3>
+                        <p>Вы распечатали товарный чек для клиента?</p>
                         <div className="confirm-modal-buttons">
-                            <button onClick={() => printReceipt(saleSuccessData)} className="btn btn-secondary">Напечатать чек</button>
-                            <button onClick={resetSaleForm} className="btn btn-primary">OK (Завершить)</button>
+                            <button 
+                                onClick={() => {
+                                    resetSaleForm();
+                                    setIsConfirmPrintModalOpen(false);
+                                }} 
+                                className="btn btn-primary"
+                            >
+                                Да, распечатал(а)
+                            </button>
+                            <button 
+                                onClick={() => setIsConfirmPrintModalOpen(false)} 
+                                className="btn btn-secondary"
+                            >
+                                Нет
+                            </button>
                         </div>
                     </div>
                 </div>

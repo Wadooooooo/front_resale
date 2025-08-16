@@ -1,5 +1,8 @@
 // src/utils/printReceipt.js
 
+import numberToWords from 'number-to-words-ru';
+import { formatCheckNumber } from './formatters'; 
+
 const getWarranty = (item) => {
     if (item.serial_number) return '12 мес.';
     if (item.product_name && item.product_name.toLowerCase().includes('блок')) return '1 мес.';
@@ -8,8 +11,8 @@ const getWarranty = (item) => {
 
 export const printReceipt = (saleData) => {
     const isPreliminary = !saleData.id;
-    const checkNumberText = isPreliminary ? 'б/н' : saleData.id;
-    const checkTitle = isPreliminary ? 'Предварительный чек' : `Товарный чек № ${saleData.id}`;
+    const checkNumberText = isPreliminary ? 'б/н' : formatCheckNumber(saleData.id);
+    const checkTitle = isPreliminary ? 'Предварительный чек' : `Товарный чек № ${checkNumberText}`;
 
     const saleDate = new Date(saleData.sale_date || Date.now());
     const formattedDate = saleDate.toLocaleDateString('ru-RU');
@@ -124,7 +127,6 @@ export const printReceipt = (saleData) => {
                             <p>Сумма скидки: ${discountAmount}</p>
                             ${
                                 paymentAdjustment > 0.01
-                                // ИСПРАВЛЕНИЕ: Неправильный обратный апостроф
                                 ? `<p>Сервисный сбор: ${paymentAdjustment.toFixed(2)}</p>`
                                 : ''
                             }
