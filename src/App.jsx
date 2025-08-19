@@ -31,6 +31,8 @@ import TrafficSourcesPage from './pages/TrafficSourcesPage.jsx';
 import PendingSalesPage from './pages/PendingSalesPage.jsx';
 import MySalesPage from './pages/MySalesPage.jsx';  
 import DepositsPage from './pages/DepositsPage.jsx';
+import ProductAnalyticsPage from './pages/ProductAnalyticsPage.jsx';
+import FinancialAnalyticsPage from './pages/FinancialAnalyticsPage.jsx';
 
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
@@ -62,6 +64,8 @@ function MainLayout() {
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/deposits" className="nav-link">Вклады</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/financial-report" className="nav-link">Рост компании</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/products" className="nav-link">Аналитика (Товары)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/financials" className="nav-link">Аналитика (Финансы)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/payroll" className="nav-link">Зарплаты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
@@ -96,6 +100,8 @@ function MainLayout() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/financial-report" element={<FinancialReportPage />} />
           <Route path="/payroll" element={<PayrollPage />} />
+          <Route path="/analytics/products" element={<ProductAnalyticsPage />} />
+          <Route path="/analytics/financials" element={<FinancialAnalyticsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           {/* Если ни один путь не совпал, перенаправляем на рабочий стол */}
           <Route path="*" element={<Navigate to="/dashboard" />} />

@@ -633,3 +633,48 @@ export const createDepositPayment = async (paymentData) => {
     return response.data;
 };
 
+export const getProductAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/products`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getFinancialAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/financials`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getSalesByDate = async (targetDate) => {
+    const response = await axios.get(`${API_BASE_URL}/sales/by-date`, {
+        params: { target_date: targetDate }
+    });
+    return response.data;
+};
+
+export const getCashflowByDate = async (targetDate) => {
+    const response = await axios.get(`${API_BASE_URL}/cashflow/by-date`, {
+        params: { target_date: targetDate }
+    });
+    return response.data;
+};
+
+export const getProductAnalyticsDetails = async (modelName, startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/products/details`, {
+        params: {
+            model_name: modelName,
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
