@@ -122,19 +122,38 @@ function PhoneHistoryPage() {
         e.preventDefault();
         if (isSubmitting) return;
 
-        
+        // 1. Находим текущий активный ремонт (тот, у которого нет даты возврата)
+        const currentRepair = history.repairs.find(r => !r.date_returned);
+
+        // 2. Проверяем, что ремонт действительно найден
+        if (!currentRepair) {
+            alert("Не удалось найти активный ремонт для этого телефона.");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
-            const dataToSend = { ...finishData, final_cost: finishData.final_cost ? parseFloat(finishData.final_cost) : null, service_cost: finishData.service_cost ? parseFloat(finishData.service_cost) : null, expense_account_id: finishData.expense_account_id ? finishData.expense_account_id.value : null };
-            // const currentRepair = history.repairs.find(r => !r.date_returned); // Мы уже нашли его выше
+            const dataToSend = {
+                work_performed: finishData.work_performed,
+                final_cost: finishData.final_cost ? parseFloat(finishData.final_cost) : null,
+                service_cost: finishData.service_cost ? parseFloat(finishData.service_cost) : null,
+                expense_account_id: finishData.expense_account_id ? finishData.expense_account_id.value : null
+            };
+            
+            // 3. Используем ID найденного ремонта для отправки на сервер
             await finishRepair(currentRepair.id, dataToSend);
+            
             setMessage('Ремонт успешно завершен.');
-            printRepairFinishDoc(history, finishData);
+            
+            // 4. Передаем найденный ремонт в функцию печати, чтобы в акте были данные клиента
+            printRepairFinishDoc(history, currentRepair, finishData);
+            
             setIsFinishModalOpen(false);
             setFinishData({ work_performed: '', final_cost: '', service_cost: '', expense_account_id: null });
             await findHistoryBySN(serialNumber);
+
         } catch (err) {
+            // Эта строка показывает ошибку, которую вы видите
             alert(err.response?.data?.detail || 'Ошибка при завершении ремонта.');
         } finally {
             setIsSubmitting(false);

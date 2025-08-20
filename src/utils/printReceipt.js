@@ -1,7 +1,6 @@
 // src/utils/printReceipt.js
 
 import numberToWords from 'number-to-words-ru';
-console.log('Что внутри numberToWords:', numberToWords); 
 import { formatCheckNumber } from './formatters'; 
 
 const getWarranty = (item) => {
@@ -103,7 +102,7 @@ export const printReceipt = (saleData) => {
                 }
 
                 .pricelist {
-            margin: 0;
+                margin: 0;
                 }
                 .price {
                     border-collapse: collapse;
@@ -118,7 +117,6 @@ export const printReceipt = (saleData) => {
                     font-size: 9pt;
                     color: black;
                     text-align: center;
-                    min-height: 24px;
                 }
                 .price td:not(:nth-child(2)) {
                     border: 1pt solid black;
@@ -127,7 +125,6 @@ export const printReceipt = (saleData) => {
                     font-size: 8pt;
                     color: black;
                     text-align: center;
-                    min-height: 24px;
                 }
                 .price td:nth-child(2){
                     width: 37%;
@@ -137,46 +134,26 @@ export const printReceipt = (saleData) => {
                     font-size: 8pt;
                     color: black;
                     text-align: left;
-                    min-height: 24px;
                 }
-                .price td:nth-child(5),
+                .price td:nth-child(6),
                 .price td:nth-child(7) {
                     min-width: 15%;
                     width: 15%;
                 }
+                .price td:nth-child(5) {
+                    width: 8%;
+                }
                 .price td:nth-child(3),
                 .price td:nth-child(4) {
-                    width: 9%;
+                    width: 10%;
                 }
-                .endprice {
-            border-collapse: collapse;
-            width: 100%;
-            background: #fff;
-            border-radius: 0;
-        }
-        .endprice td:nth-child(2){
-            padding: 6px 10px;
-            font-family: 'PT Sans', sans-serif;
+        .endprice td:first-child{
+            border-bottom: none;
+            border-left: none;
             font-size: 9pt;
             color: black;
             text-align: right;
             font-weight: bold;
-            min-height: 24px;
-            width: 30%;
-        }
-        .endprice td:nth-child(3) {
-            border-top: none;
-            border-bottom: 1pt solid black;
-            border-left: 1pt solid black;
-            border-right: 1pt solid black;
-            padding: 6px 10px;
-            font-family: 'PT Sans', sans-serif;
-            font-size: 9pt;
-            color: black;
-            text-align: center;
-            min-height: 24px;
-            min-width: 15%;
-            width: 15%;
         }
         .pricelist p{
             padding: 6px 10px;
@@ -192,7 +169,7 @@ export const printReceipt = (saleData) => {
             font-weight: bold;
             margin-top: 10px;
             padding-bottom: 0px;
-            width: 100%;
+            width: 95%;
         }
         .signature table{
             table-layout: fixed;
@@ -230,13 +207,15 @@ export const printReceipt = (saleData) => {
                 <div class="pricelist">
                     <table class="price">
                         <tbody>
-                            <th>№</th>
+                            <tr>
+                                <th>№</th>
                                 <th>Наименование товара</th>
                                 <th>Модель</th>
                                 <th>Гарантия</th>
                                 <th>Кол-во</th>
                                 <th>Цена, руб</th>
                                 <th>Сумма, руб</th>
+                            </tr>
                             ${saleData.details.map((item, index) => {
                                 const price = parseFloat(item.unit_price) || 0;
                                 const quantity = parseInt(item.quantity, 10) || 0;
@@ -255,29 +234,22 @@ export const printReceipt = (saleData) => {
                                 </tr>
                                 `;
                             }).join('')}
-                        </tbody>
-                    </table>
-                    <table class="endprice">
-                        <tbody>
-                            <tr>
-                                <td></td>
-                                <td>Итого</td>
+                            <tr class="endprice">
+                                <td colspan="6">Итого</td>
                                 <td>${subtotal}</td>
                             </tr>
                             ${
                                     paymentAdjustment > 0.01
-                                    ? `<tr><td></td><td>Сервисный сбор</td><td>${paymentAdjustment.toFixed(2)}</td></tr>`
+                                    ? `<tr class="endprice"><td colspan="6" style="border-top: none;">Сервисный сбор</td><td>${paymentAdjustment.toFixed(2)}</td></tr>`
                                     : ''
                                 }
-                            <tr>
-                                <td></td>
-                                <td>Сумма скидки</td>
+                            <tr class="endprice">
+                                <td colspan="6" style="border-top: none;">Сумма скидки</td>
                                 <td>${discountAmount}</td>
                             </tr>
-                            <tr>
-                                <td></td>
-                                <td>Всего к оплате</td>
-                                <td> ${totalAmount}</td>
+                            <tr class="endprice">
+                                <td colspan="6" style="border-top: none;">Всего к оплате</td>
+                                <td>${totalAmount}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -320,5 +292,3 @@ export const printReceipt = (saleData) => {
         printWindow.close();
     }, 250);
 };
-
-// ИСПРАВЛЕНИЕ: Удалена лишняя закрывающая фигурная скобка
