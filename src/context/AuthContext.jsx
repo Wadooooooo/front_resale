@@ -1,57 +1,55 @@
 // src/context/AuthContext.jsx
 
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { loginUser as apiLogin, setAuthToken, getAuthToken, getMe } from '../api';
+import { loginUser as apiLogin, setAuthTokens, getAuthToken, getRefreshToken, getMe, logoutUser } from '../api'; 
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(getAuthToken());
-    const [loading, setLoading] = useState(true); // <--- Изначально загрузка
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const bootstrapAuth = async () => {
-            const currentToken = getAuthToken();
-            if (currentToken) {
-                try {
-                    // Устанавливаем токен для axios ДО первого запроса
-                    setAuthToken(currentToken); 
-                    const userData = await getMe();
-                    setUser(userData);
-                    setToken(currentToken);
-                } catch (error) {
-                    console.error("Не удалось подтвердить токен, выход из системы.", error);
-                    setAuthToken(null);
-                    setToken(null);
-                    setUser(null);
-                }
-            }
-            // В любом случае (даже если токена не было) убираем загрузку
-            setLoading(false);
-        };
+    const bootstrapAuth = useCallback(async () => {
+        const accessToken = getAuthToken();
+        const refreshToken = getRefreshToken();
 
+        if (!accessToken && !refreshToken) {
+            setLoading(false);
+            return;
+        }
+        
+        try {
+            const userData = await getMe();
+            setUser(userData);
+        } catch (error) {
+            console.error("Bootstrap auth failed:", error);
+            // Если токен устарел, logoutUser очистит хранилище
+            await logoutUser();
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
         bootstrapAuth();
-    }, []); // Пустой массив зависимостей гарантирует, что это выполнится один раз
+    }, [bootstrapAuth]);
 
     const login = useCallback(async (username, password) => {
         const data = await apiLogin(username, password);
-        setAuthToken(data.access_token);
-        setToken(data.access_token);
+        setAuthTokens(data); // Сохраняем оба токена
         const userData = await getMe();
         setUser(userData);
         navigate('/');
     }, [navigate]);
 
-    const logout = useCallback(() => {
-        setAuthToken(null);
-        setToken(null);
+    const logout = useCallback(async () => {
+        await logoutUser(); // Вызываем API для выхода
         setUser(null);
         navigate('/login');
     }, [navigate]);
-
+    
     const hasPermission = useCallback((permissionCode) => {
         if (!user || !user.role || !user.role.permissions) {
             return false;
@@ -59,16 +57,15 @@ export function AuthProvider({ children }) {
         return user.role.permissions.some(p => p.code === permissionCode);
     }, [user]);
 
-    const value = { user, token, loading, login, logout, hasPermission };
+    const value = { user, token: getAuthToken(), loading, login, logout, hasPermission };
 
     return (
         <AuthContext.Provider value={value}>
-            {/* Показываем приложение только после завершения начальной загрузки */}
             {!loading && children}
         </AuthContext.Provider>
     );
-};
+} // <--- УБРАНА ;
 
 export function useAuth() {
     return useContext(AuthContext);
-};
+} // <--- УБРАНА ;

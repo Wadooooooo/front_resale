@@ -77,3 +77,24 @@
 .note-content small {
     color: #6c757d;
 }
+
+.notifications-container {
+    background-color: #fffbe6; /* Светло-желтый фон */
+    border: 1px solid #ffe58f;
+}
+
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #fddd9b;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-message {
+    font-weight: 500;
+}

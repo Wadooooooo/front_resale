@@ -8,17 +8,49 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';  // Адрес вашего
 // Используем 'accessToken', как в вашем App.jsx и LoginPage.jsx
 let authToken = localStorage.getItem('accessToken') || null;
 
-export const setAuthToken = (token) => {
-    authToken = token;
-    if (token) {
-        localStorage.setItem('accessToken', token);
+export const setAuthTokens = ({ access_token, refresh_token }) => {
+    if (access_token) {
+        localStorage.setItem('accessToken', access_token);
     } else {
         localStorage.removeItem('accessToken');
     }
+    if (refresh_token) {
+        localStorage.setItem('refreshToken', refresh_token);
+    } else {
+        localStorage.removeItem('refreshToken');
+    }
 };
 
-export const getAuthToken = () => {
-    return authToken;
+export const getAuthToken = () => localStorage.getItem('accessToken');
+export const getRefreshToken = () => localStorage.getItem('refreshToken');
+
+// --- Новая функция для запроса на обновление ---
+export const refreshAccessToken = async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) throw new Error("No refresh token available");
+
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        refresh_token: refreshToken
+    });
+    // Сохраняем оба токена
+    setAuthTokens(response.data);
+    return response.data.access_token;
+};
+
+// --- Новая функция для выхода из системы ---
+export const logoutUser = async () => {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+        try {
+            await axios.post(`${API_BASE_URL}/auth/logout`, {
+                refresh_token: refreshToken
+            });
+        } catch (error) {
+            console.error("Logout failed on server:", error);
+        }
+    }
+    // Вне зависимости от ответа сервера, чистим локальное хранилище
+    setAuthTokens({ access_token: null, refresh_token: null });
 };
 
 // --- Настройка Axios для добавления токена в заголовки ---
@@ -37,16 +69,70 @@ axios.interceptors.request.use(
 );
 
 // --- Настройка Axios для перехвата 401 ошибок ---
-axios.interceptors.response.use(
-    response => response,
-    error => {
-        // ДОБАВЛЕННЫЕ СТРОКИ
-        console.error('!!! AXIOS INTERCEPTOR ПОЙМАЛ ОШИБКУ:', error.response);
-        alert(`Сетевая ошибка: ${error.response?.status || 'Нет ответа от сервера'}. Подробности в консоли (F12).`);
-        // КОНЕЦ ДОБАВЛЕННЫХ СТРОК
+let isRefreshing = false;
+let failedQueue = [];
 
-        if (error.response && error.response.status === 401) {
-            setAuthToken(null);
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+axios.interceptors.request.use(
+    config => {
+        const token = getAuthToken();
+        if (token) {
+            config.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return config;
+    },
+    error => {
+        return Promise.reject(error);
+    }
+);
+
+axios.interceptors.response.use(
+    response => {
+        return response;
+    },
+    async error => {
+        const originalRequest = error.config;
+        if (error.response.status === 401 && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                })
+                .then(token => {
+                    originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                    return axios(originalRequest);
+                })
+                .catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const newAccessToken = await refreshAccessToken();
+                processQueue(null, newAccessToken);
+                originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+                return axios(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                // Если refresh token тоже невалиден, выходим из системы
+                logoutUser();
+                window.location = '/login'; // Перенаправляем на страницу входа
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
         return Promise.reject(error);
     }
@@ -705,6 +791,105 @@ export const getInventoryAnalytics = async (startDate, endDate) => {
             end_date: endDate
         }
     });
+    return response.data;
+};
+
+export const getTaxReport = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/reports/tax`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getQuarterlyTaxReport = async (year, quarter) => {
+    const response = await axios.get(`${API_BASE_URL}/reports/quarterly-tax`, {
+        params: { year, quarter }
+    });
+    return response.data;
+};
+
+export const getMarginAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/margins`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getSellThroughAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/sell-through`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getAbcAnalysis = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/abc-analysis`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getRepeatCustomerAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/repeat-customers`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getAverageCheckAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/average-check`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getCashFlowForecast = async (forecastDays) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/cash-flow-forecast`, {
+        params: { forecast_days: forecastDays }
+    });
+    return response.data;
+};
+
+export const getWaitingList = async () => {
+    const response = await axios.get(`${API_BASE_URL}/waiting-list`);
+    return response.data;
+};
+
+export const addToWaitingList = async (data) => {
+    const response = await axios.post(`${API_BASE_URL}/waiting-list`, data);
+    return response.data;
+};
+
+export const updateWaitingListStatus = async (entryId, status) => {
+    const response = await axios.put(`${API_BASE_URL}/waiting-list/${entryId}/status`, { status });
+    return response.data;
+};
+
+export const getUnreadNotifications = async () => {
+    const response = await axios.get(`${API_BASE_URL}/notifications`);
+    return response.data;
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+    const response = await axios.put(`${API_BASE_URL}/notifications/${notificationId}/read`);
     return response.data;
 };
 

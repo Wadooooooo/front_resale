@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { getProfitReport } from '../api';
-import './OrdersPage.css'; // Используем те же стили
+// ИЗМЕНЕНИЕ: импортируем getQuarterlyTaxReport вместо getTaxReport
+import { getProfitReport, getQuarterlyTaxReport } from '../api';
+import './OrdersPage.css';
 
-// Вспомогательный компонент для отображения метрик
 const ReportCard = ({ title, value, colorClass = '' }) => (
     <div className="balance-card">
         <h4>{title}</h4>
@@ -13,63 +13,112 @@ const ReportCard = ({ title, value, colorClass = '' }) => (
 );
 
 function ReportsPage() {
-    const [report, setReport] = useState(null);
+    // Состояния для отчетов
+    const [profitReport, setProfitReport] = useState(null);
+    const [taxReport, setTaxReport] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     
-    // Устанавливаем даты по умолчанию: с начала текущего месяца по сегодня
-    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    // Состояния для фильтров
+    const [profitStartDate, setProfitStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+    const [profitEndDate, setProfitEndDate] = useState(new Date().toISOString().split('T')[0]);
+    
+    // Новые состояния для квартального отчета
+    const [taxYear, setTaxYear] = useState(new Date().getFullYear());
+    const [taxQuarter, setTaxQuarter] = useState(Math.floor(new Date().getMonth() / 3) + 1);
 
-    const handleGenerateReport = async () => {
+    const handleGenerateProfitReport = async () => {
         try {
             setLoading(true);
             setError('');
-            setReport(null);
-            const data = await getProfitReport(startDate, endDate);
-            setReport(data);
-        } catch (err) {
-            setError('Не удалось сгенерировать отчет.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+            setProfitReport(null);
+            const data = await getProfitReport(profitStartDate, profitEndDate);
+            setProfitReport(data);
+        } catch (err) { setError('Не удалось сгенерировать отчет по прибыли.'); } finally { setLoading(false); }
     };
+
+    // Новая функция для генерации налогового отчета
+    const handleGenerateTaxReport = async () => {
+        try {
+            setLoading(true);
+            setError('');
+            setTaxReport(null);
+            const data = await getQuarterlyTaxReport(taxYear, taxQuarter);
+            setTaxReport(data);
+        } catch (err) { setError('Не удалось сгенерировать налоговый отчет.'); } finally { setLoading(false); }
+    };
+
+    // Опции для выбора года (текущий год + 4 предыдущих)
+    const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
     return (
         <div>
-            <h1>Отчет по прибыли</h1>
+            <h1>Отчеты</h1>
+            {error && <p className="form-message error">{error}</p>}
+
+            {/* Блок отчета по прибыли */}
             <div className="order-page-container">
-                <h2>Параметры отчета</h2>
+                <h2>Отчет по прибыли</h2>
                 <div className="details-grid">
                     <div className="form-section">
                         <label>Дата начала:</label>
-                        <input type="date" className="form-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                        <input type="date" className="form-input" value={profitStartDate} onChange={e => setProfitStartDate(e.target.value)} />
                     </div>
                     <div className="form-section">
                         <label>Дата окончания:</label>
-                        <input type="date" className="form-input" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                        <input type="date" className="form-input" value={profitEndDate} onChange={e => setProfitEndDate(e.target.value)} />
                     </div>
                 </div>
-                <button onClick={handleGenerateReport} className="btn btn-primary" disabled={loading}>
-                    {loading ? 'Генерация...' : 'Сформировать отчет'}
+                <button onClick={handleGenerateProfitReport} className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Генерация...' : 'Сформировать'}
                 </button>
+                {profitReport && (
+                    <div style={{marginTop: '1.5rem'}}>
+                        <h4>Результаты за период с {profitReport.start_date} по {profitReport.end_date}</h4>
+                        <div className="balances-grid">
+                            <ReportCard title="Выручка" value={profitReport.total_revenue} colorClass="balance-positive" />
+                            <ReportCard title="Себестоимость" value={profitReport.total_cogs} />
+                            <ReportCard title="Валовая прибыль" value={profitReport.gross_profit} colorClass="balance-positive" />
+                            <ReportCard title="Расходы" value={profitReport.total_expenses} colorClass="balance-negative" />
+                            <ReportCard title="Операционная прибыль" value={profitReport.operating_profit} colorClass={parseFloat(profitReport.operating_profit) >= 0 ? 'balance-positive' : 'balance-negative'} />
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {error && <p className="form-message error">{error}</p>}
-
-            {report && (
-                <div className="order-page-container">
-                    <h2>Результаты за период с {report.start_date} по {report.end_date}</h2>
-                    <div className="balances-grid">
-                        <ReportCard title="Выручка" value={report.total_revenue} colorClass="balance-positive" />
-                        <ReportCard title="Себестоимость" value={report.total_cogs} />
-                        <ReportCard title="Валовая прибыль" value={report.gross_profit} colorClass="balance-positive" />
-                        <ReportCard title="Расходы" value={report.total_expenses} colorClass="balance-negative" />
-                        <ReportCard title="Операционная прибыль" value={report.operating_profit} colorClass={parseFloat(report.operating_profit) >= 0 ? 'balance-positive' : 'balance-negative'} />
+            {/* Новый блок для налогового отчета */}
+            <div className="order-page-container">
+                <h2>Налоговый отчет (УСН Доходы 6%)</h2>
+                <div className="details-grid">
+                    <div className="form-section">
+                        <label>Год:</label>
+                        <select className="form-select" value={taxYear} onChange={e => setTaxYear(e.target.value)}>
+                            {yearOptions.map(year => <option key={year} value={year}>{year}</option>)}
+                        </select>
+                    </div>
+                    <div className="form-section">
+                        <label>Квартал:</label>
+                        <select className="form-select" value={taxQuarter} onChange={e => setTaxQuarter(e.target.value)}>
+                            <option value="1">I квартал (Янв-Мар)</option>
+                            <option value="2">II квартал (Апр-Июн)</option>
+                            <option value="3">III квартал (Июл-Сен)</option>
+                            <option value="4">IV квартал (Окт-Дек)</option>
+                        </select>
                     </div>
                 </div>
-            )}
+                <button onClick={handleGenerateTaxReport} className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Генерация...' : 'Сформировать'}
+                </button>
+                {taxReport && (
+                     <div style={{marginTop: '1.5rem'}}>
+                        <h4>Результаты за {taxQuarter} квартал {taxYear} г.</h4>
+                        <div className="balances-grid">
+                            <ReportCard title="Выручка по терминалу (налоговая база)" value={taxReport.total_card_revenue} />
+                            <ReportCard title="Сумма налога к уплате (6%)" value={taxReport.tax_amount} colorClass="balance-negative"/>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

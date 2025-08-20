@@ -36,6 +36,12 @@ import FinancialAnalyticsPage from './pages/FinancialAnalyticsPage.jsx';
 import EmployeeAnalyticsPage from './pages/EmployeeAnalyticsPage.jsx';
 import CustomerAnalyticsPage from './pages/CustomerAnalyticsPage.jsx';
 import InventoryAnalyticsPage from './pages/InventoryAnalyticsPage.jsx';
+import MarginAnalyticsPage from './pages/MarginAnalyticsPage.jsx';
+import InventoryTurnoverPage from './pages/InventoryTurnoverPage.jsx';
+import AbcAnalysisPage from './pages/AbcAnalysisPage.jsx';
+import AverageCheckPage from './pages/AverageCheckPage.jsx';
+import CashFlowForecastPage from './pages/CashFlowForecastPage.jsx';
+import WaitingListPage from './pages/WaitingListPage.jsx';
 
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
@@ -51,6 +57,7 @@ function MainLayout() {
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/dashboard" className="nav-link">Рабочий стол</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/stock" className="nav-link">Каталог</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/sales" className="nav-link">Продажа</NavLink></li>}
+            {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/waiting-list" className="nav-link">Лист ожидания</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/pending-sales" className="nav-link">Ожидают оплаты</NavLink></li>}
             {hasPermission('perform_sales') && <li className="nav-item"><NavLink to="/my-sales" className="nav-link">Мои продажи</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_inspections')) && <li className="nav-item"><NavLink to="/inspection" className="nav-link">Инспекция</NavLink></li>}
@@ -67,11 +74,16 @@ function MainLayout() {
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/deposits" className="nav-link">Вклады</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/financial-report" className="nav-link">Рост компании</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/cash-flow-forecast" className="nav-link">Прогноз ДС</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/products" className="nav-link">Аналитика (Товары)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/margins" className="nav-link">Аналитика (Маржа)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/financials" className="nav-link">Аналитика (Финансы)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/employees" className="nav-link">Аналитика (Сотрудники)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/customers" className="nav-link">Аналитика (Клиенты)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/inventory" className="nav-link">Аналитика (Склад)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/turnover" className="nav-link">Аналитика (Оборачиваемость)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/abc" className="nav-link">ABC-анализ</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/average-check" className="nav-link">Аналитика (Средний чек)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/payroll" className="nav-link">Зарплаты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
@@ -98,6 +110,7 @@ function MainLayout() {
           <Route path="/compatibility" element={<AccessoryCompatibilityPage />} />
           <Route path="/traffic-sources" element={<TrafficSourcesPage />} />
           <Route path="/sales" element={<SalesPage />} />
+          <Route path="/waiting-list" element={<WaitingListPage />} />
           <Route path="/pending-sales" element={<PendingSalesPage />} />
           <Route path="/my-sales" element={<MySalesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
@@ -105,12 +118,17 @@ function MainLayout() {
           <Route path="/deposits" element={<DepositsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/financial-report" element={<FinancialReportPage />} />
-          <Route path="/payroll" element={<PayrollPage />} />
+          <Route path="/analytics/cash-flow-forecast" element={<CashFlowForecastPage />} />
           <Route path="/analytics/products" element={<ProductAnalyticsPage />} />
+          <Route path="/analytics/margins" element={<MarginAnalyticsPage />} />
           <Route path="/analytics/financials" element={<FinancialAnalyticsPage />} />
           <Route path="/analytics/employees" element={<EmployeeAnalyticsPage />} />
           <Route path="/analytics/customers" element={<CustomerAnalyticsPage />} />
           <Route path="/analytics/inventory" element={<InventoryAnalyticsPage />} />
+          <Route path="/analytics/turnover" element={<InventoryTurnoverPage />} />
+          <Route path="/analytics/abc" element={<AbcAnalysisPage />} />
+          <Route path="/analytics/average-check" element={<AverageCheckPage />} />
+          <Route path="/payroll" element={<PayrollPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           {/* Если ни один путь не совпал, перенаправляем на рабочий стол */}
           <Route path="*" element={<Navigate to="/dashboard" />} />

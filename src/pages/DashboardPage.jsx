@@ -10,7 +10,9 @@ import {
     updateNoteStatus,
     getActiveShift, 
     startShift, 
-    endShift
+    endShift,
+    getUnreadNotifications,
+    markNotificationAsRead
 } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 import './DashboardPage.css';
@@ -40,22 +42,24 @@ function DashboardPage() {
 
     const [notification, setNotification] = useState({ isOpen: false, message: '' });
     const [isConfirmEndShiftModalOpen, setIsConfirmEndShiftModalOpen] = useState(false);
-
+    const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [summaryData, readyForSaleData, notesData, shiftData] = await Promise.all([
+                const [summaryData, readyForSaleData, notesData, shiftData, notificationsData] = await Promise.all([
                     getDashboardSalesSummary(),
                     getDashboardReadyForSale(),
                     getNotes(showAllNotes),
-                    getActiveShift()
+                    getActiveShift(),
+                    getUnreadNotifications()
                 ]);
                 setSummary(summaryData);
                 setReadyForSale(readyForSaleData);
                 setNotes(notesData);
                 setActiveShift(shiftData);
+                setNotifications(notificationsData); 
             } catch (error) {
                 console.error("Ошибка загрузки данных для дэшборда:", error);
             } finally {
@@ -65,6 +69,20 @@ function DashboardPage() {
         loadData();
     }, [showAllNotes]);
 
+    const handleMarkNotificationRead = async (id) => {
+        try {
+            // Отправляем запрос на сервер, чтобы отметить уведомление как прочитанное
+            await markNotificationAsRead(id);
+            
+            // Теперь просто удаляем это уведомление из нашего локального списка на странице,
+            // чтобы оно сразу исчезло из интерфейса.
+            setNotifications(prevNotifications => 
+                prevNotifications.filter(notification => notification.id !== id)
+            );
+        } catch (error) {
+            alert('Не удалось отметить уведомление как прочитанное.');
+        }
+    };
     const handleStartShift = async () => {
         try {
             const shift = await startShift();
@@ -124,13 +142,30 @@ function DashboardPage() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1>Рабочий стол продавца</h1>
+                <h1>Рабочий стол</h1>
                 {activeShift ? (
                     <button onClick={handleEndShift} className="btn btn-danger" style={{ marginTop: 0 }}>Завершить смену</button>
                 ) : (
                     <button onClick={handleStartShift} className="btn btn-primary" style={{ marginTop: 0 }}>Начать смену</button>
                 )}
             </div>
+
+            {notifications.length > 0 && (
+                <div className="order-page-container notifications-container">
+                    <h2>Уведомления ({notifications.length})</h2>
+                    {notifications.map(notif => (
+                        <div key={notif.id} className="notification-item">
+                            <span className="notification-message">{notif.message}</span>
+                            <button 
+                                onClick={() => handleMarkNotificationRead(notif.id)} 
+                                className="btn btn-secondary btn-compact"
+                            >
+                                Прочитано
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             
             <div className="dashboard-grid">
                 {/* Левая колонка */}
