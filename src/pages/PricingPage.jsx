@@ -1,7 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getModelStorageCombos, getAllAccessories, setPriceForPhoneCombo, addAccessoryPrice } from '../api';
-import { printPriceList } from '../utils/printPriceList'; // 1. ИМПОРТИРУЕМ ФУНКЦИЮ ПЕЧАТИ
+import { printPriceList } from '../utils/printPriceList';
 import './OrdersPage.css';
+
+// 1. НОВАЯ ФУНКЦИЯ СОРТИРОВКИ
+const customPhoneSort = (a, b) => {
+    // Определяем порядок поколений от новых к старым
+    const modelOrder = [
+        'iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone 12',
+        'iPhone 11', 'iPhone XS', 'iPhone XR', 'iPhone X',
+        'iPhone 8', 'iPhone 7', 'iPhone 6S', 'iPhone 6', 'iPhone 5s'
+    ];
+
+    // Вспомогательная функция для извлечения данных из названия
+    const parseDisplayName = (displayName) => {
+        let generationIndex = 999; // Номер поколения (чем меньше, тем новее)
+        let storage = 0;         // Объем памяти в ГБ
+
+        // Находим поколение
+        for (let i = 0; i < modelOrder.length; i++) {
+            if (displayName.includes(modelOrder[i])) {
+                generationIndex = i;
+                // Добавляем "вес" для Pro/Plus моделей, чтобы они были выше базовых
+                if (displayName.includes('Pro Max')) generationIndex -= 0.3;
+                else if (displayName.includes('Pro')) generationIndex -= 0.2;
+                else if (displayName.includes('Plus')) generationIndex -= 0.1;
+                break;
+            }
+        }
+
+        // Находим объем памяти
+        const storageMatch = displayName.match(/(\d+)\s*(GB|TB)/i);
+        if (storageMatch) {
+            let value = parseInt(storageMatch[1], 10);
+            if (storageMatch[2].toUpperCase() === 'TB') {
+                value *= 1024; // Переводим ТБ в ГБ для сравнения
+            }
+            storage = value;
+        }
+        
+        return { generationIndex, storage };
+    };
+
+    const aInfo = parseDisplayName(a.display_name);
+    const bInfo = parseDisplayName(b.display_name);
+
+    // Сначала сравниваем по поколению
+    if (aInfo.generationIndex !== bInfo.generationIndex) {
+        return aInfo.generationIndex - bInfo.generationIndex;
+    }
+
+    // Если поколения одинаковые, сравниваем по памяти (от большей к меньшей)
+    return bInfo.storage - aInfo.storage;
+};
+
 
 function PricingPage() {
     const [modelCombos, setModelCombos] = useState([]);
@@ -28,10 +80,17 @@ function PricingPage() {
         };
         loadData();
     }, []);
+    
+    // 2. СОЗДАЕМ ОТСОРТИРОВАННЫЙ СПИСОК С ПОМОЩЬЮ useMemo
+    const sortedModelCombos = useMemo(() => {
+        if (!modelCombos) return [];
+        // Создаем копию массива и сортируем его
+        return [...modelCombos].sort(customPhoneSort);
+    }, [modelCombos]);
 
-    // 2. ДОБАВЛЯЕМ ОБРАБОТЧИК ДЛЯ КНОПКИ ПЕЧАТИ
     const handlePrint = () => {
-        printPriceList(modelCombos);
+        // Печатаем отсортированный список
+        printPriceList(sortedModelCombos);
     };
 
     const handleAccessoryPriceChange = (accessoryId, price) => {
@@ -84,7 +143,6 @@ function PricingPage() {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1>Управление Ценами</h1>
-                {/* 3. ДОБАВЛЯЕМ САМУ КНОПКУ ПЕЧАТИ */}
                 <button onClick={handlePrint} className="btn btn-secondary" style={{marginTop: 0}}>
                     🖨️ Печать ценников
                 </button>
@@ -103,7 +161,8 @@ function PricingPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {modelCombos.map(combo => {
+                        {/* 3. ИСПОЛЬЗУЕМ ОТСОРТИРОВАННЫЙ СПИСОК ДЛЯ ОТОБРАЖЕНИЯ */}
+                        {sortedModelCombos.map(combo => {
                             const key = `${combo.model_name_id}_${combo.storage_id}`;
                             return (
                                 <tr key={key}>
@@ -134,7 +193,6 @@ function PricingPage() {
                 </table>
             </div>
 
-            {/* TODO: Сделать такую же таблицу для аксессуаров */}
             <div className="order-page-container">
                 <h2>Цены на аксессуары</h2>
                 <table className="orders-table">

@@ -1,5 +1,5 @@
 // src/App.jsx
-
+import React, { useEffect } from 'react';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -140,8 +140,22 @@ function MainLayout() {
 
 // Этот компонент - точка входа. Он решает, показать страницу входа или приложение.
 function App() {
+  // Эта строка получает токен, чтобы понять, вошел ли пользователь в систему
   const { token } = useAuth();
   
+  // Этот блок отключает скролл на числовых полях
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (document.activeElement.type === 'number') {
+        document.activeElement.blur();
+      }
+    };
+    document.addEventListener('wheel', handleWheel);
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   return (
     <Routes>
       {token ? (

@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 
 const formatDateTime = (isoString) => {
     if (!isoString) return '';
-    return new Date(isoString).toLocaleString('ru-RU');
+    return new Date(isoString + 'Z').toLocaleString('ru-RU');
 };
 
 // Функция для получения даты в формате YYYY-MM-DD

@@ -330,10 +330,15 @@ function OrdersPage() {
                                         ) : (
                                             <div className="form-section">
                                                 <label>Аксессуар</label>
-                                                <select className="form-select" value={detail.accessory_id} onChange={(e) => handleDetailChange(index, 'accessory_id', e.target.value)} required>
-                                                    <option value="">Выберите...</option>
-                                                    {accessoryOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                                </select>
+                                                <Select
+                                                    options={accessoryOptions}
+                                                    value={accessoryOptions.find(opt => opt.value === parseInt(detail.accessory_id))}
+                                                    onChange={(selectedOption) => handleDetailChange(index, 'accessory_id', selectedOption ? selectedOption.value : '')}
+                                                    placeholder="Выберите или начните ввод..."
+                                                    isClearable
+                                                    isSearchable
+                                                    required
+                                                />
                                             </div>
                                         )}
                                         

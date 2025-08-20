@@ -893,3 +893,13 @@ export const markNotificationAsRead = async (notificationId) => {
     return response.data;
 };
 
+export const createAccessoryCategory = async (categoryData) => {
+    const response = await axios.post(`${API_BASE_URL}/accessory-categories`, categoryData);
+    return response.data;
+};
+
+export const createModelNumber = async (name) => {
+    const response = await axios.post(`${API_BASE_URL}/model-numbers`, { name });
+    return response.data;
+};
+

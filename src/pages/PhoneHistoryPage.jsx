@@ -15,7 +15,7 @@ import { useParams } from 'react-router-dom';
 
 const formatDateTime = (isoString) => {
     if (!isoString) return 'Нет данных';
-    const date = new Date(isoString);
+    const date = new Date(isoString) + 'Z';
     return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
 };
 

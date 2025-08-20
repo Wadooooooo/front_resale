@@ -2,9 +2,8 @@
 
 .stock-grid {
     display: grid;
-    /* Адаптивная сетка: колонки от 240px до 1fr, сколько влезет */
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.5rem; /* Расстояние между карточками */
+    gap: 1.5rem;
 }
 
 .phone-card {
@@ -15,6 +14,8 @@
     text-align: center;
     transition: all 0.2s ease-in-out;
     position: relative;
+    display: flex; /* Для удобного вертикального выравнивания */
+    flex-direction: column;
 }
 
 .phone-card:hover {
@@ -26,7 +27,7 @@
 .phone-card-quantity {
     position: absolute;
     top: 10px;
-    right: 10px;
+    left: 10px;
     background-color: rgba(13, 110, 253, 0.9);
     color: white;
     padding: 4px 8px;
@@ -36,24 +37,43 @@
     z-index: 2;
 }
 
-.phone-card img {
-    width: 100%;
-    height: 200px;
-    object-fit: contain; /* Чтобы фото не искажалось */
+/* Контейнер для фото и флагов */
+.phone-card-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Расстояние между фото и флагами */
     margin-bottom: 1rem;
 }
+
+.phone-card-photo { /* Класс для фото телефона */
+    max-width: 180px;
+    height: 200px;
+    object-fit: contain;
+}
+
+/* Контейнер для флагов */
+.phone-card-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Стили для картинки флага */
+.phone-card-flag-image {
+    width: 32px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #f8f9fa; /* Фон на случай, если картинка не загрузится */
+}
+
 
 .phone-card-name {
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
-    min-height: 44px; /* Резервируем 2 строки под название */
-}
-
-.phone-card-sn {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin: 0 0 1rem 0;
+    min-height: 44px;
+    flex-grow: 1; /* Растягиваем блок, чтобы цена была всегда внизу */
 }
 
 .phone-card-price {

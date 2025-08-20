@@ -264,15 +264,15 @@ export const printReceipt = (saleData) => {
                                 <td>Итого</td>
                                 <td>${subtotal}</td>
                             </tr>
+                            ${
+                                    paymentAdjustment > 0.01
+                                    ? `<tr><td></td><td>Сервисный сбор</td><td>${paymentAdjustment.toFixed(2)}</td></tr>`
+                                    : ''
+                                }
                             <tr>
                                 <td></td>
                                 <td>Сумма скидки</td>
                                 <td>${discountAmount}</td>
-                                ${
-                                    paymentAdjustment > 0.01
-                                    ? `<p>Сервисный сбор: ${paymentAdjustment.toFixed(2)}</p>`
-                                    : ''
-                                }
                             </tr>
                             <tr>
                                 <td></td>
@@ -281,8 +281,8 @@ export const printReceipt = (saleData) => {
                             </tr>
                         </tbody>
                     </table>
-                    <p>Всего наименований ${saleData.details.length} на сумму ${subtotal} руб</p>
-                    <p><strong>${totalInWords}</strong></p>
+                    <p style="margin-bottom: 0 !important;">Всего наименований ${saleData.details.length} на сумму ${subtotal} руб</p>
+                    <p style="margin: 0 !important"><strong>${totalInWords}</strong></p>
                 </div>
                 <div class="signature">
             <table>

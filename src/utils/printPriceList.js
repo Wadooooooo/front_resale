@@ -77,6 +77,11 @@ export const printPriceList = (phones) => {
                     text-align: center;
                     width: 25%;
                 }
+                .footer {
+                    position: absolute;
+                    text-align: justify;
+                    bottom: 0;
+                }
             </style>
         </head>
         <body>
@@ -109,6 +114,10 @@ export const printPriceList = (phones) => {
                         `;
                     }).join('')}
                 </table>
+                <div class="footer">
+                    <p style="margin: 0 !important;">*Цены указаны за <b>наличный расчет</b></p>
+                    <p style="margin: 0 !important;">*<b>RFB (Refurbished)</b> — это телефон, где ранее был дефект, который устранили и установили  новую запчасть, в пленках, полностью запакованный, как новый.</p>
+                </div>
             </div>
         </body>
         </html>

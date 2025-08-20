@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AsyncSelect from 'react-select/async';
+// ИЗМЕНЕНИЕ: Импортируем AsyncCreatableSelect вместо AsyncSelect
+import AsyncCreatableSelect from 'react-select/async-creatable';
 import {
     getPhonesForInspection,
     getPhonesForBatteryTest,
@@ -8,267 +9,75 @@ import {
     addBatteryTest,
     searchModelNumbers,
     getPhonesForPackaging,
-    submitPackaging
+    submitPackaging,
+    createModelNumber // Наша API-функция
 } from '../api';
 import './OrdersPage.css';
 
-const BATTERY_THRESHOLDS = {
-    "iPhone 12": 12.0,
-    "iPhone 13": 12.0,
-    "iPhone 14": 11.5,
-    "iPhone 14 Pro": 9.0,
-    "iPhone 15": 8.5,
-};
+const BATTERY_THRESHOLDS = { "iPhone 12": 12.0, "iPhone 13": 12.0, "iPhone 14": 11.5, "iPhone 14 Pro": 9.0, "iPhone 15": 8.5, };
 const DEFAULT_BATTERY_THRESHOLD = 12.0;
 
 function InspectionPage() {
+    // Состояния, которые были раньше
     const [awaitingChecklist, setAwaitingChecklist] = useState([]);
     const [awaitingBatteryTest, setAwaitingBatteryTest] = useState([]);
     const [awaitingPackaging, setAwaitingPackaging] = useState([]);
     const [selectedForPackaging, setSelectedForPackaging] = useState([]);
-    
     const [checklist, setChecklist] = useState([]);
     const [selectedPhone, setSelectedPhone] = useState(null);
     const [currentInspection, setCurrentInspection] = useState(null);
-    
     const [serialNumber, setSerialNumber] = useState('');
     const [modelNumber, setModelNumber] = useState('');
-    const [modelNumberSuggestions, setModelNumberSuggestions] = useState([]);
     const [results, setResults] = useState({});
-    const [batteryTest, setBatteryTest] = useState({
-        start_time: '', start_battery_level: '', end_time: '', end_battery_level: ''
-    });
-
+    const [batteryTest, setBatteryTest] = useState({ start_time: '', start_battery_level: '', end_time: '', end_battery_level: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [drainRate, setDrainRate] = useState(null);
-    const [testResult, setTestResult] = useState(null); 
-
-    
-
-
-
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [checklistPhones, batteryPhones, checklistData, packagingPhones] = await Promise.all([
-                getPhonesForInspection(),
-                getPhonesForBatteryTest(),
-                getChecklistItems(),
-                getPhonesForPackaging()
-            ]);
-            setAwaitingChecklist(checklistPhones);
-            setAwaitingBatteryTest(batteryPhones);
-            setChecklist(checklistData);
-            setAwaitingPackaging(packagingPhones);
-        } catch (err) {
-            setError('Не удалось загрузить данные для инспекции.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    
+    const [testResult, setTestResult] = useState(null);
+    // Удаляем все символы, кроме английских букв и цифр, и приводим к верхнему регистру
+    const [modelNumberInput, setModelNumberInput] = useState('');
 
 
-    // --- 2. ЛОГИКА РАСЧЕТА РАСХОДА БАТАРЕИ (без изменений) ---
-    useEffect(() => {
-    const { start_time, end_time, start_battery_level, end_battery_level } = batteryTest;
-        setTestResult(null); // Сбрасываем результат при любом изменении
-
-        if (start_time && end_time && start_battery_level && end_battery_level) {
-            const startTime = new Date(start_time);
-            const endTime = new Date(end_time);
-            const startLevel = parseInt(start_battery_level, 10);
-            const endLevel = parseInt(end_battery_level, 10);
-
-            if (endTime > startTime && startLevel >= endLevel) {
-                const durationMs = endTime.getTime() - startTime.getTime();
-                const durationHours = durationMs / (1000 * 60 * 60);
-                const batteryDropped = startLevel - endLevel;
-
-                if (durationHours > 0) {
-                    const rate = batteryDropped / durationHours;
-                    const rateFixed = rate.toFixed(2);
-                    setDrainRate(rateFixed);
-
-                    // VVV НАЧАЛО НОВОЙ ЛОГИКИ VVV
-                    const modelName = selectedPhone?.model?.name || '';
-                    let threshold = DEFAULT_BATTERY_THRESHOLD;
-                    // Ищем подходящий порог по частичному совпадению
-                    for (const key in BATTERY_THRESHOLDS) {
-                        if (modelName.includes(key)) {
-                            threshold = BATTERY_THRESHOLDS[key];
-                            break;
-                        }
-                    }
-
-                    if (rate > threshold) {
-                        setTestResult({
-                            passed: false,
-                            message: `БРАК: Расход ${rateFixed}%/час превышает порог в ${threshold}%/час`
-                        });
-                    } else {
-                        setTestResult({
-                            passed: true,
-                            message: `НОРМА: Расход ${rateFixed}%/час в пределах нормы (${threshold}%/час)`
-                        });
-                    }
-                    // ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^
-
-                } else { setDrainRate(null); }
-            } else { setDrainRate(null); }
-        } else { setDrainRate(null); }
-    }, [batteryTest, selectedPhone]);
-
-    
-    // --- 3. ОБРАБОТЧИКИ СОБЫТИЙ ---
-
-    // Сброс формы в начальное состояние
-    const resetForm = () => {
-        setSelectedPhone(null);
-        setCurrentInspection(null);
-        setSerialNumber('');
-        setResults({});
-        setBatteryTest({ start_time: '', start_battery_level: '', end_time: '', end_battery_level: '' });
-        setMessage('');
+    // ИЗМЕНЕНИЕ: Новая, более простая функция для создания номера модели
+    const handleCreateModelNumber = async (inputValue) => {
+        setMessage(`Добавление "${inputValue}"...`);
         setError('');
-    };
-
-    // Выбор телефона для НАЧАЛЬНОЙ ПРОВЕРКИ (чек-лист)
-    const handleSelectForChecklist = (phone) => {
-        resetForm();
-        setSelectedPhone(phone);
-
-        // --- НАЧАЛО ИЗМЕНЕНИЙ ---
-        // Предзаполняем поля данными из объекта phone
-        setSerialNumber(phone.serial_number || '');
-        setModelNumber(phone.model_number?.name || ''); // Используем опциональную цепочку ?.
-        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
-
-        // Готовим пустой чек-лист, где все пункты пройдены по умолчанию
-        const initialResults = {};
-        checklist.forEach(item => {
-            initialResults[item.id] = { result: true, notes: '' };
-        });
-        setResults(initialResults);
-    };
-
-    // Выбор телефона для ТЕСТА АККУМУЛЯТОРА
-    const handleSelectForBatteryTest = (phone) => {
-        resetForm();
-        setSelectedPhone(phone);
-        
-        // Находим ID последней инспекции для этого телефона, чтобы отправить тест
-        const inspectionForPhone = awaitingBatteryTest.find(insp => insp.phone.id === phone.id);
-        if (inspectionForPhone) {
-            setCurrentInspection(inspectionForPhone);
-        }
-    };
-    
-    const handleResultChange = (itemId, field, value) => {
-        setResults(prevResults => ({ ...prevResults, [itemId]: { ...prevResults[itemId], [field]: value } }));
-    };
-
-    // Отправка РЕЗУЛЬТАТОВ ЧЕК-ЛИСТА
-    const handleSubmitChecklist = async (e) => {
-        e.preventDefault();
-        setMessage('Сохранение...');
-        setError('');
-        const submissionData = {
-            serial_number: serialNumber,
-            model_number: modelNumber,
-            results: Object.keys(results).map(itemId => ({
-                checklist_item_id: parseInt(itemId),
-                result: results[itemId].result,
-                notes: results[itemId].notes,
-            }))
-        };
         try {
-            await submitInitialInspection(selectedPhone.id, submissionData);
-            setMessage('Чек-лист сохранен! Телефон перемещен на тест аккумулятора.');
-            resetForm();
-            await loadData(); // Перезагружаем списки
+            const newModel = await createModelNumber(inputValue);
+            setModelNumber(newModel.name); // Сразу выбираем созданный номер
+            setMessage(`Номер модели "${newModel.name}" успешно добавлен.`);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Ошибка при сохранении чек-листа.');
+            setError(err.response?.data?.detail || 'Ошибка при создании номера модели.');
             setMessage('');
         }
     };
 
-    // Отправка РЕЗУЛЬТАТОВ ТЕСТА АККУМУЛЯТОРА
-    const handleSubmitBatteryTest = async (e) => {
-        e.preventDefault();
-        setMessage('Сохранение...');
-        setError('');
-        const batteryData = {
-            start_time: batteryTest.start_time || null,
-            start_battery_level: parseInt(batteryTest.start_battery_level) || null,
-            end_time: batteryTest.end_time || null,
-            end_battery_level: parseInt(batteryTest.end_battery_level) || null,
-        };
-        try {
-            // ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЙ ID ИЗ СОСТОЯНИЯ currentInspection
-            await addBatteryTest(currentInspection.id, batteryData); 
-
-            setMessage('Тест аккумулятора сохранен! Инспекция завершена.');
-            resetForm();
-            await loadData();
-        } catch (err) {
-            setError(err.response?.data?.detail || 'Ошибка при сохранении теста аккумулятора.');
-            setMessage('');
-        }
+    const handleSerialNumberChange = (e) => {
+        const rawValue = e.target.value;
+        const formattedValue = rawValue.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        setSerialNumber(formattedValue);
     };
 
-    // --- 4. JSX-РАЗМЕТКА ---
-    const handlePackagingCheckboxChange = (phoneId) => {
-        setSelectedForPackaging(prev =>
-            prev.includes(phoneId)
-                ? prev.filter(id => id !== phoneId)
-                : [...prev, phoneId]
-        );
+    // --- ИЗМЕНЕНИЕ 3: Добавляем обработчик для форматирования ввода "Номер модели" ---
+    const handleModelNumberInputChange = (newValue) => {
+        const formattedValue = newValue.replace(/[^a-zA-Z0-9\/-]/g, '').toUpperCase();
+        setModelNumberInput(formattedValue);
     };
 
-    const handlePackageSubmit = async () => {
-        if (selectedForPackaging.length === 0) {
-            alert('Выберите хотя бы один телефон.');
-            return;
-        }
-        setMessage('Обновление статусов...');
-        try {
-            await submitPackaging(selectedForPackaging);
-            setMessage(`${selectedForPackaging.length} телефон(ов) отмечены как упакованные.`);
-            setSelectedForPackaging([]);
-            await loadData();
-        } catch (err) {
-            setError('Ошибка при обновлении статусов.');
-            setMessage('');
-        }
-    };
-    
-
-
-    const loadModelNumberOptions = (inputValue, callback) => {
-        if (!inputValue || inputValue.length < 2) {
-            callback([]);
-            return;
-        }
-        // Эта обертка нужна, чтобы запросы не отправлялись на каждую букву
-        setTimeout(async () => {
-            try {
-                const suggestions = await searchModelNumbers(inputValue);
-                const options = suggestions.map(s => ({ value: s.name, label: s.name }));
-                callback(options);
-            } catch (error) {
-                console.error("Failed to load model numbers", error);
-                callback([]);
-            }
-        }, 300); // Задержка в 300 мс
-    };
+    // Все остальные функции остаются без изменений
+    const loadData = async () => { try { setLoading(true); const [checklistPhones, batteryPhones, checklistData, packagingPhones] = await Promise.all([ getPhonesForInspection(), getPhonesForBatteryTest(), getChecklistItems(), getPhonesForPackaging() ]); setAwaitingChecklist(checklistPhones); setAwaitingBatteryTest(batteryPhones); setChecklist(checklistData); setAwaitingPackaging(packagingPhones); } catch (err) { setError('Не удалось загрузить данные для инспекции.'); } finally { setLoading(false); } };
+    useEffect(() => { loadData(); }, []);
+    useEffect(() => { const { start_time, end_time, start_battery_level, end_battery_level } = batteryTest; setTestResult(null); if (start_time && end_time && start_battery_level && end_battery_level) { const startTime = new Date(start_time); const endTime = new Date(end_time); const startLevel = parseInt(start_battery_level, 10); const endLevel = parseInt(end_battery_level, 10); if (endTime > startTime && startLevel >= endLevel) { const durationMs = endTime.getTime() - startTime.getTime(); const durationHours = durationMs / (1000 * 60 * 60); const batteryDropped = startLevel - endLevel; if (durationHours > 0) { const rate = batteryDropped / durationHours; const rateFixed = rate.toFixed(2); setDrainRate(rateFixed); const modelName = selectedPhone?.model?.name || ''; let threshold = DEFAULT_BATTERY_THRESHOLD; for (const key in BATTERY_THRESHOLDS) { if (modelName.includes(key)) { threshold = BATTERY_THRESHOLDS[key]; break; } } if (rate > threshold) { setTestResult({ passed: false, message: `БРАК: Расход ${rateFixed}%/час превышает порог в ${threshold}%/час` }); } else { setTestResult({ passed: true, message: `НОРМА: Расход ${rateFixed}%/час в пределах нормы (${threshold}%/час)` }); } } else { setDrainRate(null); } } else { setDrainRate(null); } } else { setDrainRate(null); } }, [batteryTest, selectedPhone]);
+    const resetForm = () => { setSelectedPhone(null); setCurrentInspection(null); setSerialNumber(''); setResults({}); setBatteryTest({ start_time: '', start_battery_level: '', end_time: '', end_battery_level: '' }); setMessage(''); setError(''); };
+    const handleSelectForChecklist = (phone) => { resetForm(); setSelectedPhone(phone); setSerialNumber(phone.serial_number || ''); setModelNumber(phone.model_number?.name || ''); const initialResults = {}; checklist.forEach(item => { initialResults[item.id] = { result: true, notes: '' }; }); setResults(initialResults); };
+    const handleSelectForBatteryTest = (phone) => { resetForm(); setSelectedPhone(phone); const inspectionForPhone = awaitingBatteryTest.find(insp => insp.phone.id === phone.id); if (inspectionForPhone) { setCurrentInspection(inspectionForPhone); } };
+    const handleResultChange = (itemId, field, value) => { setResults(prevResults => ({ ...prevResults, [itemId]: { ...prevResults[itemId], [field]: value } })); };
+    const handleSubmitChecklist = async (e) => { e.preventDefault(); setMessage('Сохранение...'); setError(''); const submissionData = { serial_number: serialNumber, model_number: modelNumber, results: Object.keys(results).map(itemId => ({ checklist_item_id: parseInt(itemId), result: results[itemId].result, notes: results[itemId].notes, })) }; try { await submitInitialInspection(selectedPhone.id, submissionData); setMessage('Чек-лист сохранен! Телефон перемещен на тест аккумулятора.'); resetForm(); await loadData(); } catch (err) { setError(err.response?.data?.detail || 'Ошибка при сохранении чек-листа.'); setMessage(''); } };
+    const handleSubmitBatteryTest = async (e) => { e.preventDefault(); setMessage('Сохранение...'); setError(''); const batteryData = { start_time: batteryTest.start_time || null, start_battery_level: parseInt(batteryTest.start_battery_level) || null, end_time: batteryTest.end_time || null, end_battery_level: parseInt(batteryTest.end_battery_level) || null, }; try { await addBatteryTest(currentInspection.id, batteryData); setMessage('Тест аккумулятора сохранен! Инспекция завершена.'); resetForm(); await loadData(); } catch (err) { setError(err.response?.data?.detail || 'Ошибка при сохранении теста аккумулятора.'); setMessage(''); } };
+    const handlePackagingCheckboxChange = (phoneId) => { setSelectedForPackaging(prev => prev.includes(phoneId) ? prev.filter(id => id !== phoneId) : [...prev, phoneId] ); };
+    const handlePackageSubmit = async () => { if (selectedForPackaging.length === 0) { alert('Выберите хотя бы один телефон.'); return; } setMessage('Обновление статусов...'); try { await submitPackaging(selectedForPackaging); setMessage(`${selectedForPackaging.length} телефон(ов) отмечены как упакованные.`); setSelectedForPackaging([]); await loadData(); } catch (err) { setError('Ошибка при обновлении статусов.'); setMessage(''); } };
+    const loadModelNumberOptions = (inputValue, callback) => { if (!inputValue || inputValue.length < 2) { callback([]); return; } setTimeout(async () => { try { const suggestions = await searchModelNumbers(inputValue); const options = suggestions.map(s => ({ value: s.name, label: s.name })); callback(options); } catch (error) { console.error("Failed to load model numbers", error); callback([]); } }, 300); };
 
     if (loading) return <h2>Загрузка...</h2>;
 
@@ -276,7 +85,6 @@ function InspectionPage() {
         <div>
             <h1>Инспекция Телефонов</h1>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                
                 {/* Левая колонка */}
                 <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div className="order-page-container">
@@ -346,29 +154,42 @@ function InspectionPage() {
                         <div className="order-page-container">
                             <p>Выберите телефон из списка слева, чтобы начать проверку.</p>
                         </div>
-                    )}
-
-                    {selectedPhone && awaitingChecklist.find(p => p.id === selectedPhone.id) && (
+                    )}                    {selectedPhone && awaitingChecklist.find(p => p.id === selectedPhone.id) && (
                         <div className="order-page-container">
                             <h2>Проверка телефона ID: {selectedPhone.id} (Этап 1: Чек-лист)</h2>
                             <p><strong>Модель:</strong> {selectedPhone.model?.name}</p>
                             <form onSubmit={handleSubmitChecklist}>
                                 <div className="form-section">
                                     <label>Серийный номер (S/N):</label>
-                                    <input type="text" className="form-input" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} required />
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        value={serialNumber} 
+                                        onChange={handleSerialNumberChange}
+                                        required 
+                                    />
                                 </div>
                                 <div className="form-section">
                                     <label>Номер модели:</label>
-                                    <AsyncSelect
+                                    <AsyncCreatableSelect
                                         cacheOptions
                                         loadOptions={loadModelNumberOptions}
                                         defaultOptions
                                         value={modelNumber ? { value: modelNumber, label: modelNumber } : null}
-                                        onChange={(selectedOption) => setModelNumber(selectedOption ? selectedOption.value : '')}
-                                        placeholder="Начните ввод для поиска..."
+                                        inputValue={modelNumberInput}
+                                        onInputChange={handleModelNumberInputChange}
+                                        onChange={(selectedOption) => {
+                                            const value = selectedOption ? selectedOption.value : '';
+                                            setModelNumber(value);
+                                            setModelNumberInput(value);
+                                        }}
+                                        onCreateOption={handleCreateModelNumber}
+                                        formatCreateLabel={(inputValue) => `Добавить номер модели "${inputValue}"`}
+                                        placeholder="Начните ввод для поиска или создания..."
+                                        isClearable
                                     />
                                 </div>
-                                                                <hr />
+                                <hr />
                                 <h3>Чек-лист</h3>
                                 {checklist.map(item => (
                                     <div key={item.id} className="checklist-item-wrapper">
