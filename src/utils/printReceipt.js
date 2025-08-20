@@ -1,6 +1,7 @@
 // src/utils/printReceipt.js
 
 import numberToWords from 'number-to-words-ru';
+console.log('Что внутри numberToWords:', numberToWords); 
 import { formatCheckNumber } from './formatters'; 
 
 const getWarranty = (item) => {
@@ -12,7 +13,7 @@ const getWarranty = (item) => {
 export const printReceipt = (saleData) => {
     const isPreliminary = !saleData.id;
     const checkNumberText = isPreliminary ? 'б/н' : formatCheckNumber(saleData.id);
-    const checkTitle = isPreliminary ? 'Предварительный чек' : `Товарный чек № ${checkNumberText}`;
+    const checkTitle = isPreliminary ? 'Предварительный чек' : `Товарный чек № ${saleData.id}`;
 
     const saleDate = new Date(saleData.sale_date || Date.now());
     const formattedDate = saleDate.toLocaleDateString('ru-RU');
@@ -30,73 +31,212 @@ export const printReceipt = (saleData) => {
     const subtotal = subtotalNum.toFixed(2);
     const discountAmount = discountNum.toFixed(2);
 
+    const totalInWords = numberToWords.convert(totalAmountNum, {
+        currency: {
+            currencyNameCases: ['рубль', 'рубля', 'рублей'],
+            fractionalPartNameCases: ['копейка', 'копейки', 'копеек'],
+            currencyNounGender: {
+                integer: 0, // мужской род для рубля
+                fractionalPart: 1, // женский род для копейки
+            },
+            fractionalPartMinLength: 2,
+        },
+        convertNumberToWords: {
+            integer: true, // Конвертировать рубли в слова
+            fractional: false, // Оставить копейки как числа
+        }
+    });
+
     const receiptHtml = `
         <!DOCTYPE html>
         <html lang="ru">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
             <title>${checkTitle}</title>
             <style>
+                @page {
+                    size: 210mm 148mm ;
+                    margin: 0;
+                }
+                body {
+                    display: grid;
+                    width: 210mm;
+                    height: 148mm;
+                    margin: 0 auto;
+                    padding: 0px;
+                    box-sizing: border-box;
+                    background-color: #cecece;
+                    font-family: 'Roboto', sans-serif;
+                }
                 @media print {
-                    @page { size: A5 landscape; margin: 10mm; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    body {
+                        background-color: white;
+                    }
                 }
-                html, body {
-                    height: 100%; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    font-size: 10pt; color: #000;
+                .container {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    padding: 20px;
+                    box-sizing: border-box;
                 }
-                .container { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-                .header { margin-bottom: 15px; }
-                .header-top { font-size: 9pt; margin-bottom: 15px; }
-                .header-main { text-align: center; }
-                .header-main h1 { font-size: 20pt; font-weight: bold; margin: 0; }
-                .header-main p { margin: 1px 0; font-size: 10pt; }
-                .sub-header { text-align: center; margin-bottom: 15px; font-size: 12pt; font-weight: 500; }
-                table { width: calc(100% - 10mm); margin: 0 5mm; border-collapse: collapse; font-size: 9pt; margin-bottom: 15px; }
-                th, td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: top; }
-                th { font-weight: 600; }
-                td.text-left { text-align: left; }
-                td.text-right { text-align: right; }
-                .summary-block { display: flex; justify-content: space-between; align-items: flex-start; font-size: 10pt; padding: 0 5mm; }
-                .summary-words { flex-basis: 60%; }
-                .summary-total { flex-basis: 35%; text-align: right; font-size: 11pt; font-weight: 500; }
-                .summary-total p { margin: 3px 0; }
-                .footer { display: flex; justify-content: space-between; align-items: flex-start; font-size: 10pt; padding: 0 5mm; }
-                .signature-block { width: 45%; }
-                .signature-line { display: block; border-bottom: 1px solid #000; margin-top: 20px; margin-bottom: 3px; }
-                .signature-caption { font-size: 8pt; }
+                .header {
+                    position: relative;
+                    text-align: center;
+                    margin-bottom: 10px;
+                }
+                .header h1 {
+                    font-size: 14pt;
+                    margin: 0;
+                }
+                .header h2 {
+                    font-size: 30pt;
+                    margin: 0;
+                    font-family: 'Ubuntu';
+                }
+                .header p {
+                    margin: 0;
+                    font-size: 10pt;
+                }
+
+                .pricelist {
+            margin: 0;
+                }
+                .price {
+                    border-collapse: collapse;
+                    width: 100%;
+                    background: #fff;
+                    border-radius: 0;
+                }
+                .price th {
+                    border: 1pt solid black;
+                    padding: 6px 10px;
+                    font-family: 'PT Sans', sans-serif;
+                    font-size: 9pt;
+                    color: black;
+                    text-align: center;
+                    min-height: 24px;
+                }
+                .price td:not(:nth-child(2)) {
+                    border: 1pt solid black;
+                    padding: 6px 10px;
+                    font-family: 'PT Sans', sans-serif;
+                    font-size: 8pt;
+                    color: black;
+                    text-align: center;
+                    min-height: 24px;
+                }
+                .price td:nth-child(2){
+                    width: 37%;
+                    border: 1pt solid black;
+                    padding: 6px 10px;
+                    font-family: 'PT Sans', sans-serif;
+                    font-size: 8pt;
+                    color: black;
+                    text-align: left;
+                    min-height: 24px;
+                }
+                .price td:nth-child(5),
+                .price td:nth-child(7) {
+                    min-width: 15%;
+                    width: 15%;
+                }
+                .price td:nth-child(3),
+                .price td:nth-child(4) {
+                    width: 9%;
+                }
+                .endprice {
+            border-collapse: collapse;
+            width: 100%;
+            background: #fff;
+            border-radius: 0;
+        }
+        .endprice td:nth-child(2){
+            padding: 6px 10px;
+            font-family: 'PT Sans', sans-serif;
+            font-size: 9pt;
+            color: black;
+            text-align: right;
+            font-weight: bold;
+            min-height: 24px;
+            width: 30%;
+        }
+        .endprice td:nth-child(3) {
+            border-top: none;
+            border-bottom: 1pt solid black;
+            border-left: 1pt solid black;
+            border-right: 1pt solid black;
+            padding: 6px 10px;
+            font-family: 'PT Sans', sans-serif;
+            font-size: 9pt;
+            color: black;
+            text-align: center;
+            min-height: 24px;
+            min-width: 15%;
+            width: 15%;
+        }
+        .pricelist p{
+            padding: 6px 10px;
+            margin-top: 10px;
+            font-family: 'PT Sans', sans-serif;
+            font-size: 10pt;
+            color: black;
+        }
+        .signature {
+            position: absolute; 
+            bottom: 0;
+            font-size: 9pt;
+            font-weight: bold;
+            margin-top: 10px;
+            padding-bottom: 0px;
+            width: 100%;
+        }
+        .signature table{
+            table-layout: fixed;
+            border: none;
+            font-weight: bold;
+        }
+        .signature table td:nth-child(1),
+        .signature table td:nth-child(4){
+            border: none;
+            width: 5%;
+        }
+        .signature table td{
+            border: none;
+            width: 30%;
+        }
+        .signature .right{
+            text-align: right;
+        }
+        .signature .line {
+            border-top: 1pt solid black;
+            font-size: 8pt;
+            text-align: justify;
+        }
             </style>
         </head>
         <body>
             <div class="container">
-                <div>
-                    <div class="header">
-                        <div class="header-top">${formattedDate}</div>
-                        <div class="header-main">
-                            <h1>resale</h1>
-                            <p>г. Оренбург, проезд Автоматики 19</p>
-                            <p>тел.: +7 (901) 088-2523</p>
-                            <p>режим работы: пн - вс с 10:00 до 21:00</p>
-                        </div>
-                    </div>
-
-                    <div class="sub-header">
-                        Товарный чек &nbsp;&nbsp;&nbsp;&nbsp; № ${checkNumberText} &nbsp;&nbsp;&nbsp;&nbsp; от ${formattedDate}
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>№</th>
-                                <th style="width: 40%;">Наименование товара</th>
+                <div class="header">
+                    <h2>resale</h2>
+                    <p>ИП Садыков Владислав Аликович</p>
+                    <p>пр. Автоматики, 17, г. Оренбург. ПН-ВС 10:00 – 21:00 Тел.: +7 (901) 088-25-23</p>
+                    <br>
+                    <h1>Товарный чек № ${checkNumberText} от ${formattedDate}</h1>
+                </div>
+                <div class="pricelist">
+                    <table class="price">
+                        <tbody>
+                            <th>№</th>
+                                <th>Наименование товара</th>
                                 <th>Модель</th>
                                 <th>Гарантия</th>
                                 <th>Кол-во</th>
                                 <th>Цена, руб</th>
                                 <th>Сумма, руб</th>
-                            </tr>
-                        </thead>
-                        <tbody>
                             ${saleData.details.map((item, index) => {
                                 const price = parseFloat(item.unit_price) || 0;
                                 const quantity = parseInt(item.quantity, 10) || 0;
@@ -117,34 +257,55 @@ export const printReceipt = (saleData) => {
                             }).join('')}
                         </tbody>
                     </table>
-                    
-                    <div class="summary-block">
-                        <div class="summary-words">
-                            <p>Всего наименований ${saleData.details.length} на сумму ${subtotal} руб</p>
-                        </div>
-                        <div class="summary-total">
-                            <p>Сумма: ${subtotal}</p>
-                            <p>Сумма скидки: ${discountAmount}</p>
-                            ${
-                                paymentAdjustment > 0.01
-                                ? `<p>Сервисный сбор: ${paymentAdjustment.toFixed(2)}</p>`
-                                : ''
-                            }
-                            <p>К оплате: ${totalAmount}</p>
-                        </div>
-                    </div>
+                    <table class="endprice">
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Итого</td>
+                                <td>${subtotal}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>Сумма скидки</td>
+                                <td>${discountAmount}</td>
+                                ${
+                                    paymentAdjustment > 0.01
+                                    ? `<p>Сервисный сбор: ${paymentAdjustment.toFixed(2)}</p>`
+                                    : ''
+                                }
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>Всего к оплате</td>
+                                <td> ${totalAmount}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>Всего наименований ${saleData.details.length} на сумму ${subtotal} руб</p>
+                    <p><strong>${totalInWords}</strong></p>
                 </div>
-
-                <div class="footer">
-                    <div class="signature-block">
-                        <span>Продавец</span>
-                        <span class="signature-line"></span>
-                    </div>
-                    <div class="signature-block">
-                        <span class="signature-line"></span>
-                        <span class="signature-caption">Претензий к внешнему виду и комплектации не имею</span>
-                    </div>
-                </div>
+                <div class="signature">
+            <table>
+                <tr>
+                    <td>Продавец</td>
+                    <td></td>
+                    <td></td>
+                    <td class="right">Покупатель</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td class="line"></td>
+                    <td></td>
+                    <td></td>
+                    <td class="line">Претензий к внешнему виду и комплектации не имею</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td> </td>
+                </tr>
+            </table>
+        </div>
             </div>
         </body>
         </html>

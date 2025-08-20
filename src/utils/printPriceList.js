@@ -18,64 +18,74 @@ export const printPriceList = (phones) => {
         <html lang="ru">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
             <title>Прайс-лист</title>
             <style>
-                @media print {
-                    @page { size: A4; margin: 20mm; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                @page {
+                    margin: 0;
                 }
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    font-size: 12pt;
+                    display: grid;
+                    grid-template-rows: 1fr auto;
+                    font-family: 'Ubuntu';
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                    width: 210mm;
+                    height: 297mm;
+                    margin: 0 auto;
+                    padding: 0px;
+                }
+                .container {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    padding: 20px;
+                    box-sizing: border-box;
                 }
                 .header {
+                    position: relative;
+                    margin-bottom: 30px;
                     text-align: center;
-                    margin-bottom: 2rem;
-                    border-bottom: 2px solid #000;
-                    padding-bottom: 1rem;
                 }
-                .header h1 { margin: 0; }
-                .header p { margin: 5px 0 0 0; font-size: 14pt; }
-                table {
-                    width: 100%;
+                .header h1 {
+                    font-size: 10pt;
+                    margin: 0;
+                    font-weight: normal;
+                }
+                .header h2 {
+                    font-family: 'Ubuntu';
+                    font-size: 50pt;
+                    margin: 0;
+                }
+                .price {
+                    font-size: 17pt;
                     border-collapse: collapse;
-                    font-size: 14pt;
-                }
-                th, td {
-                    border: 1px solid #ccc;
-                    padding: 12px;
-                    text-align: left;
-                }
-                th {
-                    background-color: #f2f2f2;
-                    font-weight: 600;
-                }
-                /* Стили для центральной и правой колонок */
-                td:nth-child(2) {
-                    text-align: center;
-                    white-space: nowrap;
-                }
-                td:last-child {
-                    text-align: right;
+                    table-layout: fixed;
+                    width: 100%;
                     font-weight: bold;
-                    white-space: nowrap;
+                }
+                .price td{
+                    padding: 10px 0 10px 0;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+                .price td:nth-child(2),
+                .price td:nth-child(3){
+                    font-weight: normal !important;
+                    text-align: center;
+                    width: 25%;
                 }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>Актуальный прайс-лист</h1>
-                <p>на ${formatDate()}</p>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Модель</th>
-                        <th style="text-align: center;">Память</th>
-                        <th style="text-align: right;">Цена</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="container">
+                <div class="header">
+                    <h2>resale</h2>
+                    <h1>прайс-лист на ${formatDate()}</h1>
+                </div>
+                <table class="price">
                     ${pricedPhones.map(phone => {
                         // ИЗМЕНЕНИЕ 2: Логика для разделения названия и памяти
                         let modelName = phone.display_name;
@@ -98,8 +108,8 @@ export const printPriceList = (phones) => {
                             </tr>
                         `;
                     }).join('')}
-                </tbody>
-            </table>
+                </table>
+            </div>
         </body>
         </html>
     `;

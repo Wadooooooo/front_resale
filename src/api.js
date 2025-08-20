@@ -678,3 +678,33 @@ export const getProductAnalyticsDetails = async (modelName, startDate, endDate) 
     return response.data;
 };
 
+export const getEmployeeAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/employees`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getCustomerAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/customers`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+
+export const getInventoryAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/inventory`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
+    return response.data;
+};
+

@@ -33,6 +33,9 @@ import MySalesPage from './pages/MySalesPage.jsx';
 import DepositsPage from './pages/DepositsPage.jsx';
 import ProductAnalyticsPage from './pages/ProductAnalyticsPage.jsx';
 import FinancialAnalyticsPage from './pages/FinancialAnalyticsPage.jsx';
+import EmployeeAnalyticsPage from './pages/EmployeeAnalyticsPage.jsx';
+import CustomerAnalyticsPage from './pages/CustomerAnalyticsPage.jsx';
+import InventoryAnalyticsPage from './pages/InventoryAnalyticsPage.jsx';
 
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
@@ -66,6 +69,9 @@ function MainLayout() {
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/financial-report" className="nav-link">Рост компании</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/products" className="nav-link">Аналитика (Товары)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/financials" className="nav-link">Аналитика (Финансы)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/employees" className="nav-link">Аналитика (Сотрудники)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/customers" className="nav-link">Аналитика (Клиенты)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/inventory" className="nav-link">Аналитика (Склад)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/payroll" className="nav-link">Зарплаты</NavLink></li>}
             {hasPermission('manage_users') && <li className="nav-item"><NavLink to="/employees" className="nav-link">Сотрудники</NavLink></li>}
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
@@ -102,6 +108,9 @@ function MainLayout() {
           <Route path="/payroll" element={<PayrollPage />} />
           <Route path="/analytics/products" element={<ProductAnalyticsPage />} />
           <Route path="/analytics/financials" element={<FinancialAnalyticsPage />} />
+          <Route path="/analytics/employees" element={<EmployeeAnalyticsPage />} />
+          <Route path="/analytics/customers" element={<CustomerAnalyticsPage />} />
+          <Route path="/analytics/inventory" element={<InventoryAnalyticsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           {/* Если ни один путь не совпал, перенаправляем на рабочий стол */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
