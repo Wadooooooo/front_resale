@@ -154,8 +154,8 @@ export const loginUser = async (username, password) => {
 };
 
 // --- API для Телефонов ---
-export const getPhones = async () => {
-    const response = await axios.get(`${API_BASE_URL}/phones`);
+export const getPhones = async (skip = 0, limit = 25) => {
+    const response = await axios.get(`${API_BASE_URL}/phones`, { params: { skip, limit } });
     return response.data;
 };
 
@@ -349,8 +349,12 @@ export const setPriceForPhoneCombo = async (priceData) => {
 
 // --- API для Движения Денег ---
 
-export const getCashFlows = async () => {
-    const response = await axios.get(`${API_BASE_URL}/cashflow`);
+export const getCashFlows = async (skip = 0, limit = 50, accountId = null) => {
+    const params = { skip, limit };
+    if (accountId) {
+        params.account_id = accountId;
+    }
+    const response = await axios.get(`${API_BASE_URL}/cashflow`, { params });
     return response.data;
 };
 

@@ -462,3 +462,13 @@ h3 {
     white-space: nowrap;
     color: #6c757d;
 }
+
+.btn-success {
+    color: #fff;
+    background-color: #198754; /* Приятный зеленый цвет */
+    border-color: #198754;
+}
+.btn-success:hover {
+    background-color: #157347; /* Более темный зеленый при наведении */
+    border-color: #146c43;
+}

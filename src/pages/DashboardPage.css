@@ -98,3 +98,7 @@
 .notification-message {
     font-weight: 500;
 }
+
+.add-note-form textarea.form-input {
+    height: auto; /* Убираем фиксированную высоту */
+}

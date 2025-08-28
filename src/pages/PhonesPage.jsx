@@ -1,227 +1,115 @@
 // src/pages/PhonesPage.jsx
 
-// ... (импорты и другие компоненты остаются без изменений) ...
-import React, { useState, useEffect, useMemo } from 'react';
-import { getPhones, getModelColorCombos, updateImageForModelColor } from '../api';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getPhones } from '../api';
 import './OrdersPage.css';
-import './AccessoriesPage.css';
 
-const EditModelModal = ({ model, onClose, onSave }) => {
-    const [imageUrl, setImageUrl] = useState(model.image_url || '');
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        onSave({ 
-            model_name_id: model.model_name_id,
-            color_id: model.color_id,
-            image_url: imageUrl 
-        });
-    };
-
-    return (
-        <div className="confirm-modal-overlay">
-            <div className="confirm-modal-dialog" style={{ textAlign: 'left' }}>
-                <h3>Редактировать фото для модели</h3>
-                <p><strong>{model.model_name} ({model.color_name})</strong></p>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-section">
-                        <label>Ссылка на фото (URL)</label>
-                        <input
-                            type="text"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            className="form-input"
-                            placeholder="https://example.com/image.jpg"
-                        />
-                    </div>
-                    <div className="confirm-modal-buttons">
-                        <button type="submit" className="btn btn-primary">Сохранить</button>
-                        <button type="button" onClick={onClose} className="btn btn-secondary">Отмена</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
+// Компонент для вкладки со списком телефонов
 const PhoneListTab = () => {
     const [phones, setPhones] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+    // Состояния для пагинации
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const PAGE_SIZE = 25; // Количество телефонов на одной странице
+
     useEffect(() => {
         const fetchPhones = async () => {
             try {
-                const phonesData = await getPhones();
-                setPhones(phonesData.sort((a, b) => b.id - a.id));
+                setLoading(true);
+                const skip = (page - 1) * PAGE_SIZE;
+                
+                // Запрашиваем данные для конкретной страницы
+                const data = await getPhones(skip, PAGE_SIZE);
+                
+                // Сохраняем список телефонов из `data.items`
+                setPhones(data.items); 
+                
+                // Рассчитываем общее количество страниц
+                setTotalPages(Math.ceil(data.total / PAGE_SIZE));
+
             } catch (err) {
                 console.error('Ошибка при загрузке телефонов:', err);
-                if (err.response?.status === 401) navigate('/login');
+                if (err.response?.status === 401) {
+                    navigate('/login');
+                }
             } finally {
                 setLoading(false);
             }
         };
         fetchPhones();
-    }, [navigate]);
+    }, [navigate, page]); // Перезагружаем данные при смене страницы
 
     if (loading) return <h4>Загрузка списка телефонов...</h4>;
 
     return (
-        <table className="orders-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Модель</th>
-                    <th>S/N</th>
-                    <th>Коммерческий статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                {phones.map(phone => (
-                    <tr key={phone.id}>
-                        <td>{phone.id}</td>
-                        <td>{phone.model?.name || '-'}</td>
-                        <td>
-                            {phone.serial_number ? (
-                                <Link to={`/phone-history/${phone.serial_number}`} className="clickable-sn">
-                                    {phone.serial_number}
-                                </Link>
-                            ) : (
-                                '-'
-                            )}
-                        </td>
-                        <td>{phone.commercial_status || '-'}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    );
-};
-
-
-// Вкладка "Управление моделями" (ОБНОВЛЕНА)
-const ModelManagementTab = () => {
-    const [modelColorCombos, setModelColorCombos] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [editingModel, setEditingModel] = useState(null);
-    const [message, setMessage] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const data = await getModelColorCombos();
-            setModelColorCombos(data);
-        } catch (err) {
-            console.error("Ошибка:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const handleSave = async (updateData) => {
-        try {
-            await updateImageForModelColor(updateData);
-            setMessage('Фотография успешно обновлена для всей группы!');
-            setEditingModel(null);
-            await loadData();
-        } catch (err) {
-            alert('Не удалось сохранить изменения.');
-        }
-    };
-
-    // 1. УЛУЧШЕННАЯ ЛОГИКА СОРТИРОВКИ
-    const sortedAndFilteredCombos = useMemo(() => {
-        // Функция, которая присваивает "очки" каждой модели для сортировки
-        const getSortScore = (name) => {
-            // Список поколений от старых к новым. Длинные названия должны идти раньше!
-            const ranks = [
-                'iPhone 6S', 'iPhone SE', 'iPhone 7', 'iPhone 8', 'iPhone X', 
-                'iPhone XR', 'iPhone XS', 'iPhone 11', 'iPhone SE 2020', 'iPhone 12', 
-                'iPhone 13', 'iPhone SE 2022', 'iPhone 14', 'iPhone 15', 'iPhone 16'
-            ];
-            
-            // Находим, к какому поколению относится модель
-            // Идем с конца, чтобы найти самое новое поколение в названии
-            for (let i = ranks.length - 1; i >= 0; i--) {
-                if (name.includes(ranks[i])) {
-                    let score = i;
-                    // Добавляем микро-очки для Pro/Max, чтобы они были выше базовых моделей
-                    if (name.includes('Pro Max')) score += 0.3;
-                    else if (name.includes('Pro')) score += 0.2;
-                    else if (name.includes('Plus')) score += 0.1;
-                    return score;
-                }
-            }
-            return -1; // Для моделей, не попавших в список
-        };
-
-        return modelColorCombos
-            .filter(combo =>
-                combo.model_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                combo.color_name.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .sort((a, b) => getSortScore(b.model_name) - getSortScore(a.model_name));
-    }, [modelColorCombos, searchTerm]);
-
-    if (loading) return <h4>Загрузка моделей...</h4>;
-
-    return (
-        <div>
-            {message && <p className="form-message success">{message}</p>}
-            {editingModel && (
-                <EditModelModal
-                    model={editingModel}
-                    onClose={() => setEditingModel(null)}
-                    onSave={handleSave}
-                />
-            )}
-
-            <div className="form-section" style={{ maxWidth: '400px', marginBottom: '1.5rem' }}>
-                <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Поиск по модели или цвету..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                />
-            </div>
-
+        <>
             <table className="orders-table">
                 <thead>
                     <tr>
-                        <th>Название модели</th>
-                        <th>Цвет</th>
-                        <th>Ссылка на фото</th>
-                        <th>Действие</th>
+                        <th>ID</th>
+                        <th>Модель</th>
+                        <th>S/N</th>
+                        <th>Коммерческий статус</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {/* 2. Используем новый отсортированный список */}
-                    {sortedAndFilteredCombos.map(combo => (
-                        <tr key={`${combo.model_name_id}-${combo.color_id}`}>
-                            <td>{combo.model_name}</td>
-                            <td>{combo.color_name}</td>
-                            <td className="url-cell">{combo.image_url || 'Не задана'}</td>
+                    {phones.map(phone => (
+                        <tr key={phone.id}>
+                            <td>{phone.id}</td>
+                            <td>{phone.model?.name || '-'}</td>
                             <td>
-                                <button onClick={() => setEditingModel(combo)} className="btn btn-secondary btn-compact">
-                                    Изменить фото
-                                </button>
+                                {phone.serial_number ? (
+                                    <Link to={`/phone-history/${phone.serial_number}`} className="clickable-sn">
+                                        {phone.serial_number}
+                                    </Link>
+                                ) : ('-')}
                             </td>
+                            <td>{phone.commercial_status || '-'}</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+
+            {/* Блок с кнопками пагинации */}
+            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+                <button onClick={() => setPage(1)} disabled={page <= 1} className="btn btn-secondary">
+                    В начало
+                </button>
+                <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="btn btn-secondary">
+                    Назад
+                </button>
+                <span>Страница {page} из {totalPages}</span>
+                <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="btn btn-secondary">
+                    Вперед
+                </button>
+                <button onClick={() => setPage(totalPages)} disabled={page >= totalPages} className="btn btn-secondary">
+                    В конец
+                </button>
+            </div>
+        </>
+    );
+    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+};
+
+
+// Компонент для вкладки создания телефона (остается без изменений)
+const CreatePhoneTab = () => {
+    // Здесь может быть ваша логика для создания телефона
+    return (
+        <div>
+            <h2>Добавить телефон вручную</h2>
+            <p>Этот раздел находится в разработке.</p>
         </div>
     );
 };
 
-// ... (основной компонент PhonesPage остается без изменений) ...
+
+// Основной компонент страницы
 function PhonesPage() {
     const [activeTab, setActiveTab] = useState('list');
 
@@ -236,14 +124,15 @@ function PhonesPage() {
                     >
                         Список телефонов
                     </button>
-                    <button
-                        className={`tab-button ${activeTab === 'management' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('management')}
+                    {/* <button
+                        className={`tab-button ${activeTab === 'create' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('create')}
                     >
-                        Управление моделями
-                    </button>
+                        Добавить телефон
+                    </button> */}
                 </div>
-                {activeTab === 'list' ? <PhoneListTab /> : <ModelManagementTab />}
+                {activeTab === 'list' && <PhoneListTab />}
+                {activeTab === 'create' && <CreatePhoneTab />}
             </div>
         </div>
     );

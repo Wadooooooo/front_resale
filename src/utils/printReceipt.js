@@ -9,6 +9,13 @@ const getWarranty = (item) => {
     return '';
 };
 
+const getConditionLabel = (condition) => {
+    if (condition === 'Восстановленный') return ' (RFB/Refurbished)';
+    if (condition === 'Б/У') return ' (б/у)';
+    // Для "Новый" и других случаев ничего не добавляем
+    return '';
+};
+
 export const printReceipt = (saleData) => {
     const isPreliminary = !saleData.id;
     const checkNumberText = isPreliminary ? 'б/н' : formatCheckNumber(saleData.id);
@@ -21,6 +28,7 @@ export const printReceipt = (saleData) => {
     const subtotalNum = saleData.details.reduce((sum, item) => {
         const price = parseFloat(item.unit_price) || 0;
         const quantity = parseInt(item.quantity, 10) || 0;
+        const conditionLabel = getConditionLabel(item.condition);
         return sum + (price * quantity);
     }, 0);
     const discountNum = parseFloat(saleData.discount) || 0;
@@ -155,6 +163,10 @@ export const printReceipt = (saleData) => {
             text-align: right;
             font-weight: bold;
         }
+        
+        .endprice td:last-child {
+            text-align: center;
+        }
         .pricelist p{
             padding: 6px 10px;
             margin-top: 10px;
@@ -219,18 +231,19 @@ export const printReceipt = (saleData) => {
                             ${saleData.details.map((item, index) => {
                                 const price = parseFloat(item.unit_price) || 0;
                                 const quantity = parseInt(item.quantity, 10) || 0;
+                                const conditionLabel = getConditionLabel(item.condition);
                                 return `
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td class="text-left">
-                                        ${item.product_name || item.name}
+                                        ${item.product_name || item.name}${conditionLabel}
                                         ${item.serial_number ? `<br><small style="font-size: 8pt; color: #333;">S/N: ${item.serial_number}</small>` : ''}
                                     </td>
                                     <td>${item.model_number || 'б/н'}</td>
                                     <td>${getWarranty(item)}</td>
                                     <td>${quantity}</td>
-                                    <td class="text-right">${price.toFixed(2)}</td>
-                                    <td class="text-right">${(quantity * price).toFixed(2)}</td>
+                                    <td>${price.toFixed(2)}</td>
+                                    <td>${(quantity * price).toFixed(2)}</td>
                                 </tr>
                                 `;
                             }).join('')}

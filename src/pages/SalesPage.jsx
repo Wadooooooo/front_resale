@@ -173,6 +173,25 @@ function SalesPage() {
     const productOptions = products.filter(p => !cart.some(cartItem => cartItem.warehouse_id === p.warehouse_id)).map(p => ({ value: p.warehouse_id, label: `${p.name} (Цена: ${p.price || 0} руб.) ${p.serial_number ? `S/N: ${p.serial_number}` : `| Остаток: ${p.quantity}`}`, product: p }));
     const customerOptions = customers.map(c => ({ value: c.id, label: c.number ? `${c.name || 'Имя не указано'} ${c.number}` : `${c.name || 'Имя не указано'} (б/н)` }));
 
+    const handlePrintReceipt = () => {
+        if (!saleSuccessData || !cart) return;
+
+        const receiptData = { ...saleSuccessData };
+
+        // Новая, надежная логика сопоставления по warehouse_id
+        receiptData.details = saleSuccessData.details.map(detail => {
+            const cartItem = cart.find(c => c.warehouse_id === detail.warehouse_id);
+            
+            return {
+                ...detail,
+                // Если нашли товар в корзине, добавляем его состояние
+                condition: cartItem ? cartItem.condition : null 
+            };
+        });
+        
+        printReceipt(receiptData);
+    };
+
     if (loading) return <h2>Загрузка...</h2>;
 
     return (
@@ -237,7 +256,7 @@ function SalesPage() {
                         <h3>Продажа №{formatCheckNumber(saleSuccessData.id)} успешно оформлена!</h3>
                         <p>Итоговая сумма: <strong>{parseFloat(saleSuccessData.total_amount).toFixed(2)} руб.</strong></p>
                         <div className="confirm-modal-buttons">
-                            <button onClick={() => printReceipt(saleSuccessData)} className="btn btn-secondary">Напечатать чек</button>
+                            <button onClick={handlePrintReceipt} className="btn btn-secondary">Напечатать чек</button>
 
                             {/* Check for a phone in the sale before showing the warranty button */}
                             {saleSuccessData.details.some(item => item.serial_number) && (

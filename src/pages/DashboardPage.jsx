@@ -194,9 +194,12 @@ function DashboardPage() {
                                     placeholder="Поиск по S/N для возврата или ремонта..."
                                     className="form-input"
                                 />
-                                <button type="submit" className="btn btn-primary">Найти</button>
+                                <button type="submit" className="btn btn-primary ">Найти</button>
                             </form>
-                            <Link to="/stock" className="btn btn-secondary" style={{ marginTop: 0 }}>
+                            <Link to="/sales" className="btn btn-success" style={{ marginTop: 0, height: '50px', width: '70px' }}>
+                                🛒 Продажа
+                            </Link>
+                            <Link to="/stock" className="btn btn-secondary" style={{ marginTop: 0, height: '50px', width: '70px' }}>
                                 🗂️ Открыть каталог
                             </Link>
                         </div>
