@@ -253,7 +253,7 @@ export const printReceipt = (saleData) => {
                             </tr>
                         </tbody>
                     </table>
-                    <p style="margin-bottom: 0 !important;">Всего наименований ${saleData.details.length} на сумму ${subtotal} руб</p>
+                    <p style="margin-bottom: 0 !important;">Всего наименований ${saleData.details.length} на сумму ${totalAmount} руб</p>
                     <p style="margin: 0 !important"><strong>${totalInWords}</strong></p>
                 </div>
                 <div class="signature">

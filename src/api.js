@@ -903,3 +903,8 @@ export const createModelNumber = async (name) => {
     return response.data;
 };
 
+export const getSaleById = async (saleId) => {
+    const response = await axios.get(`${API_BASE_URL}/sales/${saleId}`);
+    return response.data;
+};
+
