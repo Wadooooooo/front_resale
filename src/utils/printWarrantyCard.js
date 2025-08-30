@@ -94,6 +94,6 @@ export const printWarrantyCard = (saleData) => {
     printWindow.focus();
     setTimeout(() => {
         printWindow.print();
-        // printWindow.close(); // Можно закомментировать, чтобы окно не закрывалось сразу
+        printWindow.close(); // Можно закомментировать, чтобы окно не закрывалось сразу
     }, 250);
 };
