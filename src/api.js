@@ -414,6 +414,11 @@ export const getProfitReport = async (startDate, endDate) => {
     return response.data;
 };
 
+export const getDividendCalculations = async () => {
+    const response = await axios.get(`${API_BASE_URL}/reports/dividends`);
+    return response.data;
+};
+
 export const getMe = async () => {
     const response = await axios.get(`${API_BASE_URL}/users/me/`);
     return response.data;
@@ -909,6 +914,11 @@ export const createModelNumber = async (name) => {
 
 export const getSaleById = async (saleId) => {
     const response = await axios.get(`${API_BASE_URL}/sales/${saleId}`);
+    return response.data;
+};
+
+export const getCompanyHealthAnalytics = async () => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/company-health`);
     return response.data;
 };
 

@@ -9,7 +9,7 @@ const formatCurrency = (amount) => parseFloat(amount).toLocaleString('ru-RU', { 
 const SnapshotDetailsModal = ({ snapshot, onClose }) => {
     if (!snapshot || !snapshot.details) return null;
 
-    const { inventory = [], goods_in_transit = [], cash_by_account = [] } = snapshot.details;
+    const { inventory = [], goods_in_transit = [], cash_by_account = [], goods_sent_to_customer = [] } = snapshot.details;
 
     const formatCurrency = (amount) => parseFloat(amount).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
 
@@ -18,7 +18,7 @@ const SnapshotDetailsModal = ({ snapshot, onClose }) => {
             <div className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '1000px' }}>
                 <h3>Детализация среза от {formatDate(snapshot.snapshot_date)}</h3>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '2rem' }}>
                     
                     {/* Колонка для денег */}
                     <div>
@@ -146,6 +146,47 @@ const SnapshotDetailsModal = ({ snapshot, onClose }) => {
                         </table>
                         {/* ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ */}
                     </div>
+                    <div>
+                        <h4>Доставка клиенту ({goods_sent_to_customer.length} шт.)</h4>
+                         <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                            <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '15%' }} />
+                                    <col style={{ width: '50%' }} />
+                                    <col style={{ width: '35%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>S/N</th>
+                                        <th style={{ textAlign: 'right' }}>Цена</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {goods_sent_to_customer.map(item => (
+                                        <tr key={`sent-${item.id}`}>
+                                            <td>{item.id}</td>
+                                            <td className="url-cell">{item.sn || 'б/н'}</td>
+                                            <td style={{ textAlign: 'right' }}>{item.price.toLocaleString('ru-RU')} руб.</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <table className="orders-table" style={{ tableLayout: 'fixed' }}>
+                             <colgroup>
+                                <col style={{ width: '15%' }} />
+                                <col style={{ width: '50%' }} />
+                                <col style={{ width: '35%' }} />
+                            </colgroup>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan="2" style={{ fontWeight: 'bold' }}>Итого:</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(snapshot.goods_sent_to_customer_value)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
 
                 <div className="confirm-modal-buttons">
@@ -219,7 +260,8 @@ function FinancialReportPage() {
                             <th>Дата среза</th>
                             <th style={{textAlign: 'right'}}>Деньги в кассе</th>
                             <th style={{textAlign: 'right'}}>Стоимость склада</th>
-                            <th style={{textAlign: 'right'}}>Товары в пути</th>
+                            <th style={{textAlign: 'right'}}>Товары в пути (на склад)</th>
+                            <th style={{textAlign: 'right'}}>Товары в пути (клиенту)</th>
                             <th style={{textAlign: 'right', fontWeight: 'bold'}}>ИТОГО АКТИВЫ</th>
                             <th>Действие</th>
                         </tr>
@@ -231,6 +273,7 @@ function FinancialReportPage() {
                                 <td style={{textAlign: 'right'}}>{formatCurrency(s.cash_balance)}</td>
                                 <td style={{textAlign: 'right'}}>{formatCurrency(s.inventory_value)}</td>
                                 <td style={{textAlign: 'right'}}>{formatCurrency(s.goods_in_transit_value)}</td>
+                                <td style={{textAlign: 'right'}}>{formatCurrency(s.goods_sent_to_customer_value)}</td>
                                 <td style={{textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(s.total_assets)}</td>
                                 <td style={{textAlign: 'center'}}>
                                     <button 

@@ -64,8 +64,8 @@ export function AuthProvider({ children }) {
             {!loading && children}
         </AuthContext.Provider>
     );
-} // <--- УБРАНА ;
+}
 
 export function useAuth() {
     return useContext(AuthContext);
-} // <--- УБРАНА ;
+}

@@ -20,6 +20,7 @@ import PricingPage from './pages/PricingPage.jsx';
 import CashFlowPage from './pages/CashFlowPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import FinancialReportPage from './pages/FinancialReportPage.jsx';
+import CompanyHealthPage from './pages/CompanyHealthPage.jsx';
 import PayrollPage from './pages/PayrollPage.jsx';
 import AccessoryCompatibilityPage from './pages/AccessoryCompatibilityPage.jsx';
 import PhoneHistoryPage from './pages/PhoneHistoryPage.jsx';
@@ -42,6 +43,7 @@ import AbcAnalysisPage from './pages/AbcAnalysisPage.jsx';
 import AverageCheckPage from './pages/AverageCheckPage.jsx';
 import CashFlowForecastPage from './pages/CashFlowForecastPage.jsx';
 import WaitingListPage from './pages/WaitingListPage.jsx';
+import DividendsPage from './pages/DividendsPage.jsx';
 
 
 // Этот компонент отвечает за основную структуру страницы (меню + контент)
@@ -74,6 +76,8 @@ function MainLayout() {
             {hasPermission('manage_cashflow') && <li className="nav-item"><NavLink to="/deposits" className="nav-link">Вклады</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/reports" className="nav-link">Отчеты</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/financial-report" className="nav-link">Рост компании</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/company-health" className="nav-link">Состояние компании</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/dividends" className="nav-link">Дивиденды</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/cash-flow-forecast" className="nav-link">Прогноз ДС</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/products" className="nav-link">Аналитика (Товары)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/margins" className="nav-link">Аналитика (Маржа)</NavLink></li>}
@@ -118,6 +122,8 @@ function MainLayout() {
           <Route path="/deposits" element={<DepositsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/financial-report" element={<FinancialReportPage />} />
+          <Route path="/company-health" element={<CompanyHealthPage />} />
+          <Route path="/dividends" element={<DividendsPage />} />
           <Route path="/analytics/cash-flow-forecast" element={<CashFlowForecastPage />} />
           <Route path="/analytics/products" element={<ProductAnalyticsPage />} />
           <Route path="/analytics/margins" element={<MarginAnalyticsPage />} />
