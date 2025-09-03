@@ -43,38 +43,58 @@ function CompanyHealthPage() {
             tension: 0.1
         }]
     };
-
+    
     const capital = analyticsData.capital_structure;
-    const pieChartData = {
+    const pieCapitalData = {
         labels: ['Собственные средства', 'Заемные средства (долги)'],
         datasets: [{
             data: [capital.company_equity, capital.total_liabilities],
             backgroundColor: ['#36A2EB', '#FF6384'],
-            hoverBackgroundColor: ['#36A2EB', '#FF6384']
         }]
+    };
+    
+    const assets = analyticsData.asset_composition;
+    const pieAssetsData = {
+        labels: ['Деньги в кассе', 'Склад', 'В пути (от поставщика)', 'В пути (клиенту)'],
+        datasets: [{
+            data: [
+                assets.cash_balance, 
+                assets.inventory_value, 
+                assets.goods_in_transit_value, 
+                assets.goods_sent_to_customer_value
+            ],
+            backgroundColor: ['#4BC0C0', '#FFCE56', '#9966FF', '#FF9F40'],
+        }]
+    };
+
+    const chartOptions = {
+        plugins: { legend: { position: 'top' } },
+        maintainAspectRatio: false
     };
 
     return (
         <div>
             <h1>Общее состояние компании</h1>
-            <div className="order-page-container">
-                <h2>Структура капитала</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                    <div style={{ position: 'relative', height: '250px', width: '250px' }}>
-                        <Doughnut data={pieChartData} />
+            
+            {/* --- БЛОК С ДИАГРАММАМИ --- */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'flex-start' }}>
+                <div className="order-page-container">
+                    <h2>Структура капитала</h2>
+                    <p>Показывает, какая часть активов ваша, а какая — заемная.</p>
+                    <div style={{ position: 'relative', height: '300px' }}>
+                        <Doughnut data={pieCapitalData} options={chartOptions} />
                     </div>
-                    <div>
-                        <div className="balance-card">
-                            <h4>Собственный капитал</h4>
-                            <p className="balance-positive">{formatCurrency(capital.company_equity)}</p>
-                        </div>
-                         <div className="balance-card" style={{marginTop: '1rem'}}>
-                            <h4>Обязательства (долги)</h4>
-                            <p className="balance-negative">{formatCurrency(capital.total_liabilities)}</p>
-                        </div>
+                </div>
+
+                <div className="order-page-container">
+                    <h2>Состав активов</h2>
+                    <p>Показывает, в какой форме находятся ваши активы.</p>
+                    <div style={{ position: 'relative', height: '300px' }}>
+                        <Doughnut data={pieAssetsData} options={chartOptions} />
                     </div>
                 </div>
             </div>
+
             <div className="order-page-container">
                 <h2>Динамика роста активов</h2>
                  <div style={{ height: '400px' }}>
