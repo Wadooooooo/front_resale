@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getPhones } from '../api';
+import { getPhones, getModelColorCombos, updateImageForModelColor } from '../api';
 import './OrdersPage.css';
 
 // Компонент для вкладки со списком телефонов
@@ -96,6 +96,132 @@ const PhoneListTab = () => {
     // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 };
 
+const ModelManagementTab = () => {
+    const [modelColorCombos, setModelColorCombos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [editingModel, setEditingModel] = useState(null); // Для модального окна
+    const [imageUrl, setImageUrl] = useState('');
+    const [message, setMessage] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const data = await getModelColorCombos();
+            setModelColorCombos(data);
+        } catch (err) {
+            console.error("Ошибка загрузки комбинаций моделей и цветов:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const handleEdit = (combo) => {
+        setEditingModel(combo);
+        setImageUrl(combo.image_url || '');
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (!editingModel) return;
+
+        try {
+            const updateData = {
+                model_name_id: editingModel.model_name_id,
+                color_id: editingModel.color_id,
+                image_url: imageUrl,
+            };
+            await updateImageForModelColor(updateData);
+            setMessage('Изображение успешно обновлено!');
+            setEditingModel(null);
+            loadData(); // Перезагружаем данные для отображения изменений
+        } catch (err) {
+            alert('Ошибка при обновлении изображения.');
+        }
+    };
+
+    const sortedAndFilteredCombos = modelColorCombos
+        .filter(combo => 
+            combo.model_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            combo.color_name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.model_name.localeCompare(b.model_name));
+
+    if (loading) return <h4>Загрузка моделей...</h4>;
+
+    return (
+        <div>
+            {editingModel && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog" style={{ textAlign: 'left' }}>
+                        <h3>Изменить изображение для</h3>
+                        <p><strong>{editingModel.model_name} {editingModel.color_name}</strong></p>
+                        <form onSubmit={handleSave}>
+                            <div className="form-section">
+                                <label>URL изображения</label>
+                                <input
+                                    type="text"
+                                    value={imageUrl}
+                                    onChange={(e) => setImageUrl(e.target.value)}
+                                    className="form-input"
+                                    placeholder="Вставьте ссылку на изображение..."
+                                />
+                            </div>
+                            <div className="confirm-modal-buttons">
+                                <button type="submit" className="btn btn-primary">Сохранить</button>
+                                <button type="button" onClick={() => setEditingModel(null)} className="btn btn-secondary">Отмена</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            <div className="form-section">
+                <input
+                    type="text"
+                    placeholder="Поиск по названию или цвету..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="form-input"
+                    style={{ maxWidth: '400px' }}
+                />
+            </div>
+             {message && <p className="form-message success">{message}</p>}
+            <table className="orders-table">
+                <thead>
+                    <tr>
+                        <th>Модель</th>
+                        <th>Цвет</th>
+                        <th>Изображение</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedAndFilteredCombos.map(combo => (
+                        <tr key={`${combo.model_name_id}-${combo.color_id}`}>
+                            <td>{combo.model_name}</td>
+                            <td>{combo.color_name}</td>
+                            <td>
+                                {combo.image_url ? 
+                                    <img src={combo.image_url} alt={`${combo.model_name}`} style={{ width: '40px', height: 'auto' }} /> : 
+                                    'Нет фото'
+                                }
+                            </td>
+                            <td>
+                                <button onClick={() => handleEdit(combo)} className="btn btn-secondary btn-compact">
+                                    Изменить
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
 
 // Компонент для вкладки создания телефона (остается без изменений)
 const CreatePhoneTab = () => {
@@ -124,15 +250,15 @@ function PhonesPage() {
                     >
                         Список телефонов
                     </button>
-                    {/* <button
-                        className={`tab-button ${activeTab === 'create' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('create')}
+                    <button
+                        className={`tab-button ${activeTab === 'management' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('management')}
                     >
-                        Добавить телефон
-                    </button> */}
+                        Управление моделями
+                    </button>
                 </div>
                 {activeTab === 'list' && <PhoneListTab />}
-                {activeTab === 'create' && <CreatePhoneTab />}
+                {activeTab === 'management' && <ModelManagementTab />}
             </div>
         </div>
     );
