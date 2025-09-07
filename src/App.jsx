@@ -40,6 +40,7 @@ import InventoryAnalyticsPage from './pages/InventoryAnalyticsPage.jsx';
 import MarginAnalyticsPage from './pages/MarginAnalyticsPage.jsx';
 import InventoryTurnoverPage from './pages/InventoryTurnoverPage.jsx';
 import AbcAnalysisPage from './pages/AbcAnalysisPage.jsx';
+import AccessoryAnalyticsPage from './pages/AccessoryAnalyticsPage.jsx';
 import AverageCheckPage from './pages/AverageCheckPage.jsx';
 import CashFlowForecastPage from './pages/CashFlowForecastPage.jsx';
 import WaitingListPage from './pages/WaitingListPage.jsx';
@@ -80,6 +81,7 @@ function MainLayout() {
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/dividends" className="nav-link">Дивиденды</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/cash-flow-forecast" className="nav-link">Прогноз ДС</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/products" className="nav-link">Аналитика (Товары)</NavLink></li>}
+            {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/accessories" className="nav-link">Аналитика (Аксессуары)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/margins" className="nav-link">Аналитика (Маржа)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/financials" className="nav-link">Аналитика (Финансы)</NavLink></li>}
             {hasPermission('view_reports') && <li className="nav-item"><NavLink to="/analytics/employees" className="nav-link">Аналитика (Сотрудники)</NavLink></li>}
@@ -126,6 +128,7 @@ function MainLayout() {
           <Route path="/dividends" element={<DividendsPage />} />
           <Route path="/analytics/cash-flow-forecast" element={<CashFlowForecastPage />} />
           <Route path="/analytics/products" element={<ProductAnalyticsPage />} />
+          <Route path="/analytics/accessories" element={<AccessoryAnalyticsPage />} />
           <Route path="/analytics/margins" element={<MarginAnalyticsPage />} />
           <Route path="/analytics/financials" element={<FinancialAnalyticsPage />} />
           <Route path="/analytics/employees" element={<EmployeeAnalyticsPage />} />

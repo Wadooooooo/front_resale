@@ -102,3 +102,46 @@
 .add-note-form textarea.form-input {
     height: auto; /* Убираем фиксированную высоту */
 }
+
+.low-stock-container {
+    background-color: #fff3cd; /* Светло-оранжевый фон */
+    border: 1px solid #ffe69c;
+}
+
+.low-stock-container h2 {
+    color: #664d03; /* Темно-желтый для заголовка */
+    border-bottom-color: #ffe69c;
+}
+
+.low-stock-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.low-stock-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #ffe69c;
+    font-weight: 500;
+}
+
+.low-stock-list li:last-child {
+    border-bottom: none;
+}
+
+.low-stock-quantity {
+    font-weight: normal;
+    color: #dc3545; /* Красный цвет для остатка */
+}
+
+.toggle-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.toggle-arrow.expanded {
+    transform: rotate(180deg);
+}

@@ -558,6 +558,13 @@ export const getDashboardReadyForSale = async () => {
     return response.data;
 };
 
+export const getLowStockAccessories = async (threshold = 10) => {
+    const response = await axios.get(`${API_BASE_URL}/dashboard/low-stock-accessories`, {
+        params: { threshold }
+    });
+    return response.data;
+};
+
 export const getPhonesInStock = async () => {
     const response = await axios.get(`${API_BASE_URL}/phones/in-stock`);
     return response.data;
@@ -917,8 +924,23 @@ export const getSaleById = async (saleId) => {
     return response.data;
 };
 
+export const cancelSale = async (saleId) => {
+    const response = await axios.post(`${API_BASE_URL}/sales/${saleId}/cancel`);
+    return response.data;
+};
+
 export const getCompanyHealthAnalytics = async () => {
     const response = await axios.get(`${API_BASE_URL}/analytics/company-health`);
+    return response.data;
+};
+
+export const getAccessoryAnalytics = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/analytics/accessories`, {
+        params: {
+            start_date: startDate,
+            end_date: endDate
+        }
+    });
     return response.data;
 };
 

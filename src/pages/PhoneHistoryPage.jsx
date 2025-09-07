@@ -7,7 +7,7 @@ import {
     getPhoneHistory, getAccounts, processRefund, startRepair, 
     finishRepair, getReplacementPhones, processExchange, payForRepair,
     getAvailableLoanerPhones, issueLoanerPhone, returnLoanerPhone,
-    getSaleById // Импортируем новую функцию
+    getSaleById, cancelSale 
 } from '../api';
 import './OrdersPage.css';
 import './PhoneHistoryPage.css';
@@ -61,6 +61,7 @@ function PhoneHistoryPage() {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     // Состояния для модальных окон
     const [accounts, setAccounts] = useState([]);
@@ -248,6 +249,28 @@ function PhoneHistoryPage() {
         return 'В ремонте';
     };
 
+    const handleConfirmCancel = async () => {
+        if (!history || !history.sale_info || !history.sale_info.sale_id) {
+            setError('Не найдена информация о продаже для этого телефона. Отмена невозможна.');
+            setIsCancelModalOpen(false); // Закрываем модальное окно, чтобы показать ошибку
+            return;
+        }
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        setError(''); // Сбрасываем предыдущую ошибку
+        try {
+            await cancelSale(history.sale_info.sale_id);
+            setMessage('Продажа успешно отменена. Телефон возвращен на склад.');
+            setIsCancelModalOpen(false);
+            await findHistoryBySN(serialNumber); // Обновляем данные
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Не удалось отменить продажу.');
+            setIsCancelModalOpen(false); // Закрываем модальное окно, чтобы была видна ошибка
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const formatEnumValueForDisplay = (value) => {
         if (!value) return "";
         return value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
@@ -276,7 +299,14 @@ function PhoneHistoryPage() {
                             {currentRepair?.active_loaner && ( <p style={{ margin: '0.5rem', padding: '0.5rem', backgroundColor: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}><strong>Выдан подменный:</strong> {currentRepair.active_loaner.loaner_phone_details}</p> )}
                         </div>
                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
-                            {history.commercial_status === 'ПРОДАН' && ( <> <button onClick={() => setIsRefundModalOpen(true)} className="btn btn-danger">Возврат денег</button> <button onClick={handleOpenExchangeModal} className="btn btn-warning">Обмен</button> <button onClick={() => setIsAcceptanceModalOpen(true)} className="btn btn-secondary">В ремонт</button> </> )}
+                            {history.commercial_status === 'ПРОДАН' && ( 
+                                <> 
+                                    <button onClick={() => setIsCancelModalOpen(true)} className="btn btn-secondary">Отменить продажу (ошибка)</button>
+                                    <button onClick={() => setIsRefundModalOpen(true)} className="btn btn-danger">Возврат денег (брак)</button> 
+                                    <button onClick={handleOpenExchangeModal} className="btn btn-warning">Обмен устройства</button> 
+                                    <button onClick={() => setIsAcceptanceModalOpen(true)} className="btn btn-secondary">В ремонт</button> 
+                                </> 
+                            )}
                             {currentRepair && !currentRepair.date_returned && ( <> 
                             <button 
                                 onClick={() => {
@@ -345,6 +375,18 @@ function PhoneHistoryPage() {
                             )}
 
                             <button onClick={handleJustClose} className="btn btn-primary">Завершить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {isCancelModalOpen && (
+                <div className="confirm-modal-overlay">
+                    <div className="confirm-modal-dialog">
+                        <h3>Подтверждение отмены продажи</h3>
+                        <p>Вы уверены, что хотите отменить продажу? Это действие полностью аннулирует финансовую операцию и вернет телефон на склад.</p>
+                        <div className="confirm-modal-buttons">
+                            <button onClick={handleConfirmCancel} className="btn btn-warning" disabled={isSubmitting}>{isSubmitting ? 'Отмена...' : 'Да, отменить продажу'}</button>
+                            <button onClick={() => setIsCancelModalOpen(false)} className="btn btn-secondary" disabled={isSubmitting}>Закрыть</button>
                         </div>
                     </div>
                 </div>

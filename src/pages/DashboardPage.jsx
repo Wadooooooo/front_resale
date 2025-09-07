@@ -12,7 +12,8 @@ import {
     startShift, 
     endShift,
     getUnreadNotifications,
-    markNotificationAsRead
+    markNotificationAsRead,
+    getLowStockAccessories 
 } from '../api';
 import './OrdersPage.css'; // Используем общие стили
 import './DashboardPage.css';
@@ -43,23 +44,27 @@ function DashboardPage() {
     const [notification, setNotification] = useState({ isOpen: false, message: '' });
     const [isConfirmEndShiftModalOpen, setIsConfirmEndShiftModalOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [lowStockItems, setLowStockItems] = useState([]);
+    const [isLowStockVisible, setIsLowStockVisible] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [summaryData, readyForSaleData, notesData, shiftData, notificationsData] = await Promise.all([
+                const [summaryData, readyForSaleData, notesData, shiftData, notificationsData, lowStockData] = await Promise.all([
                     getDashboardSalesSummary(),
                     getDashboardReadyForSale(),
                     getNotes(showAllNotes),
                     getActiveShift(),
-                    getUnreadNotifications()
+                    getUnreadNotifications(),
+                    getLowStockAccessories() 
                 ]);
                 setSummary(summaryData);
                 setReadyForSale(readyForSaleData);
                 setNotes(notesData);
                 setActiveShift(shiftData);
                 setNotifications(notificationsData); 
+                setLowStockItems(lowStockData);
             } catch (error) {
                 console.error("Ошибка загрузки данных для дэшборда:", error);
             } finally {
@@ -68,6 +73,10 @@ function DashboardPage() {
         };
         loadData();
     }, [showAllNotes]);
+
+    const toggleLowStockVisibility = () => {
+        setIsLowStockVisible(prevState => !prevState);
+    };
 
     const handleMarkNotificationRead = async (id) => {
         try {
@@ -164,6 +173,26 @@ function DashboardPage() {
                             </button>
                         </div>
                     ))}
+                </div>
+            )}
+            {lowStockItems.length > 0 && (
+                <div className="order-page-container low-stock-container">
+                    <h2 onClick={toggleLowStockVisibility} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>⚠️ Внимание: Популярные товары заканчиваются</span>
+                        <span className={`toggle-arrow ${isLowStockVisible ? 'expanded' : ''}`}>▼</span>
+                    </h2>
+                    {isLowStockVisible && (
+                        <ul className="low-stock-list">
+                            {lowStockItems.map(item => (
+                                <li key={item.accessory.id}>
+                                    <span>{item.accessory.name}</span>
+                                    <span className="low-stock-quantity">
+                                        Осталось: <strong>{item.total_quantity} шт.</strong>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             )}
             
