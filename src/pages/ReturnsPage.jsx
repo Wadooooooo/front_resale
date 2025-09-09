@@ -1,135 +1,180 @@
+// src/pages/ReturnsPage.jsx
+
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { 
     getDefectivePhones, 
-    getPhonesSentToSupplier, 
-    sendToSupplier, 
-    returnFromSupplier,
-    getReplacementModelOptions,
-    replaceFromSupplier
+    getSuppliers,
+    createReturnShipment,
+    getReturnShipments,
+    createSdekOrderForReturn
 } from '../api';
 import './OrdersPage.css';
 
+// Модальное окно для создания новой отправки
+const CreateShipmentModal = ({ phones, suppliers, onClose, onCreated }) => {
+    const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [trackNumber, setTrackNumber] = useState('');
+
+    const supplierOptions = suppliers.map(s => ({ value: s.id, label: s.name }));
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedSupplier) {
+            alert('Выберите поставщика.');
+            return;
+        }
+        try {
+            const shipmentData = {
+                supplier_id: selectedSupplier.value,
+                phone_ids: phones.map(p => p.id),
+                track_number: trackNumber || null
+            };
+            await createReturnShipment(shipmentData);
+            onCreated();
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Не удалось создать отправку.');
+        }
+    };
+
+    return (
+        <div className="confirm-modal-overlay">
+            <form onSubmit={handleSubmit} className="confirm-modal-dialog" style={{ textAlign: 'left' }}>
+                <h3>Новая отправка поставщику</h3>
+                <p>Будет создана отправка из <strong>{phones.length}</strong> устройств.</p>
+                <div className="form-section">
+                    <label>Поставщик*</label>
+                    <Select options={supplierOptions} value={selectedSupplier} onChange={setSelectedSupplier} placeholder="Выберите..." required />
+                </div>
+                <div className="form-section">
+                    <label>Трек-номер (если есть)</label>
+                    <input type="text" value={trackNumber} onChange={e => setTrackNumber(e.target.value)} className="form-input" />
+                </div>
+                <div className="confirm-modal-buttons">
+                    <button type="submit" className="btn btn-primary">Создать и отправить</button>
+                    <button type="button" onClick={onClose} className="btn btn-secondary">Отмена</button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+// Компонент для отображения одной отправки
+const ShipmentCard = ({ shipment }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const handleCreateSdekOrder = async () => {
+        const senderName = window.prompt("Введите имя отправителя (ваше):", "Владислав Садыков");
+        if (!senderName) return;
+
+        const senderPhone = window.prompt("Введите телефон отправителя:", "+79010882523");
+        if (!senderPhone) return;
+        
+        const fromAddress = window.prompt("Введите адрес отправки:", "г. Оренбург, пр. Автоматики, 17");
+        if (!fromAddress) return;
+
+        const weight = window.prompt("Введите общий вес посылки в граммах:", "1000");
+        if (!weight) return;
+
+        // Здесь можно добавить запросы габаритов, если они меняются
+        const sdekData = {
+            sender_name: senderName,
+            sender_phone: senderPhone,
+            from_location_address: fromAddress,
+            // Адрес получателя (поставщика) нужно будет добавить в форму
+            to_location_address: shipment.supplier.contact_info, // Используем контактную информацию
+            weight: parseInt(weight),
+            length: 10, width: 10, height: 10 // Габариты по умолчанию
+        };
+
+        try {
+            await createSdekOrderForReturn(shipment.id, sdekData);
+            alert('Заказ в СДЭК успешно создан!');
+            onSdekCreated(); // Эта функция обновит список отправок
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Ошибка при создании заказа в СДЭК.');
+        }
+    };
+
+    return (
+        <div className="order-page-container" style={{padding: '1.5rem'}}>
+            <div onClick={() => setIsExpanded(!isExpanded)} style={{cursor: 'pointer', display: 'flex', justifyContent: 'space-between'}}>
+                <div>
+                    <h4>Отправка №{shipment.id} от {new Date(shipment.created_date).toLocaleDateString('ru-RU')}</h4>
+                    <p style={{margin: 0}}>Поставщик: <strong>{shipment.supplier.name}</strong> | Статус: <strong>{shipment.status}</strong></p>
+                    {shipment.track_number && <p style={{margin: '5px 0 0 0'}}>Трек: <strong>{shipment.track_number}</strong></p>}
+                </div>
+                <span style={{fontSize: '1.5rem'}}>{isExpanded ? '▲' : '▼'}</span>
+            </div>
+            {isExpanded && (
+                <ul style={{marginTop: '1rem', paddingLeft: '20px'}}>
+                    {shipment.status === "В сборке" && (
+                        <button onClick={handleCreateSdekOrder} className="btn btn-info" style={{backgroundColor: '#0dcaf0', marginTop: '1rem'}}>
+                            Создать заказ СДЭК
+                        </button>
+                    )}
+                </ul>
+            )}
+        </div>
+    );
+}
+
 function ReturnsPage() {
     const [defectivePhones, setDefectivePhones] = useState([]);
-    const [sentPhones, setSentPhones] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
+    const [shipments, setShipments] = useState([]);
     const [selectedPhoneIds, setSelectedPhoneIds] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState('');
-
-    const [isReplacementModalOpen, setIsReplacementModalOpen] = useState(false);
-    const [phoneToReplace, setPhoneToReplace] = useState(null);
-    const [replacementOptions, setReplacementOptions] = useState([]);
-    const [replacementData, setReplacementData] = useState({
-        new_serial_number: '',
-        new_model_id: ''
-    });
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const loadData = async () => {
         try {
             setLoading(true);
-            setMessage(''); // Сбрасываем сообщение при каждой загрузке
-            const [defectiveData, sentData] = await Promise.all([
+            const [defectiveData, suppliersData, shipmentsData] = await Promise.all([
                 getDefectivePhones(),
-                getPhonesSentToSupplier()
+                getSuppliers(),
+                getReturnShipments()
             ]);
             setDefectivePhones(defectiveData);
-            setSentPhones(sentData);
+            setSuppliers(suppliersData);
+            setShipments(shipmentsData);
         } catch (error) {
-            setMessage('Ошибка загрузки данных');
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const handleCheckboxChange = (phoneId) => {
         setSelectedPhoneIds(prev =>
-            prev.includes(phoneId)
-                ? prev.filter(id => id !== phoneId)
-                : [...prev, phoneId]
+            prev.includes(phoneId) ? prev.filter(id => id !== phoneId) : [...prev, phoneId]
         );
     };
-
-    const handleSend = async () => {
-        if (selectedPhoneIds.length === 0) {
-            alert('Выберите хотя бы один телефон для отправки.');
-            return;
-        }
-        try {
-            await sendToSupplier(selectedPhoneIds);
-            setMessage(`${selectedPhoneIds.length} телефон(ов) отмечены как отправленные.`);
-            setSelectedPhoneIds([]);
-            await loadData();
-        } catch (error) {
-            setMessage('Ошибка при отправке.');
-        }
+    
+    const handleShipmentCreated = () => {
+        setIsModalOpen(false);
+        setSelectedPhoneIds([]);
+        loadData();
     };
 
-    const handleReturn = async (phoneId) => {
-        try {
-            await returnFromSupplier(phoneId);
-            setMessage(`Телефон ID ${phoneId} возвращен на инспекцию.`);
-            await loadData();
-        } catch (error) {
-            setMessage('Ошибка при возврате от поставщика.');
-        }
-    };
-
-    const handleOpenReplacementModal = async (phone) => {
-        try {
-            const options = await getReplacementModelOptions(phone.model.id);
-            setReplacementOptions(options);
-            setPhoneToReplace(phone);
-            setReplacementData({ new_serial_number: '', new_model_id: String(phone.model.id) });
-            setIsReplacementModalOpen(true);
-        } catch (err) {
-            alert('Не удалось загрузить варианты для замены.');
-        }
-    };
-
-    const handleReplacementInputChange = (e) => {
-        const { name, value } = e.target;
-        setReplacementData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleReplacementSubmit = async (e) => {
-        e.preventDefault();
-        if (!replacementData.new_serial_number || !replacementData.new_model_id) {
-            alert('Пожалуйста, заполните все поля.');
-            return;
-        }
-        try {
-            const dataToSend = {
-                ...replacementData,
-                new_model_id: parseInt(replacementData.new_model_id)
-            };
-            await replaceFromSupplier(phoneToReplace.id, dataToSend);
-            setMessage(`Телефон S/N ${phoneToReplace.serial_number} успешно заменен на новый.`);
-            setIsReplacementModalOpen(false);
-            setPhoneToReplace(null);
-            await loadData();
-        } catch (err) {
-            alert(err.response?.data?.detail || 'Ошибка при оформлении замены.');
-        }
-    };
+    const selectedPhones = defectivePhones.filter(p => selectedPhoneIds.includes(p.id));
 
     if (loading) return <h2>Загрузка...</h2>;
 
     return (
         <div>
-            <h1>Брак и возвраты поставщику</h1>
-            {message && <p className="form-message success">{message}</p>}
+            {isModalOpen && <CreateShipmentModal phones={selectedPhones} suppliers={suppliers} onClose={() => setIsModalOpen(false)} onCreated={handleShipmentCreated} />}
 
-            {/* VVV ЭТОТ БЛОК БЫЛ ПРОПУЩЕН И ТЕПЕРЬ ВОЗВРАЩЕН VVV */}
+            <h1>Брак и возвраты поставщику</h1>
+
             <div className="order-page-container">
                 <h2>Брак на складе ({defectivePhones.length})</h2>
                 <table className="orders-table">
                     <thead>
                         <tr>
-                            <th>Выбрать</th>
+                            <th style={{width: '50px'}}>Выбрать</th>
                             <th>ID</th>
                             <th>Модель</th>
                             <th>S/N</th>
@@ -148,68 +193,21 @@ function ReturnsPage() {
                         ))}
                     </tbody>
                 </table>
-                <button onClick={handleSend} className="btn btn-primary" disabled={selectedPhoneIds.length === 0}>
-                    Отправить выбранные ({selectedPhoneIds.length})
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary" disabled={selectedPhoneIds.length === 0}>
+                    Создать отправку для выбранных ({selectedPhoneIds.length})
                 </button>
             </div>
 
-            <div className="order-page-container">
-                <h2>Отправлено поставщику ({sentPhones.length})</h2>
-                <table className="orders-table">
-                     <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Модель</th>
-                            <th>S/N</th>
-                            <th>Причина отправки</th>
-                            <th>Действие</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sentPhones.map(phone => (
-                            <tr key={phone.id}>
-                                <td>{phone.id}</td>
-                                <td>{phone.model?.name || 'Нет данных'}</td>
-                                <td>{phone.serial_number}</td>
-                                <td>{phone.defect_reason || 'Не указана'}</td>
-                                <td>
-                                    <div style={{ display: 'inline-flex', gap: '5px' }}>
-                                        <button onClick={() => handleReturn(phone.id)} className="btn btn-secondary btn-compact">Принять (ремонт)</button>
-                                        <button onClick={() => handleOpenReplacementModal(phone)} className="btn btn-primary btn-compact">Принять (замена)</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div>
+                <h2>История отправок</h2>
+                {shipments.map(shipment => 
+                    <ShipmentCard 
+                        key={shipment.id} 
+                        shipment={shipment} 
+                        onSdekCreated={loadData} // Передаем функцию для обновления
+                    />
+                )}
             </div>
-
-            {isReplacementModalOpen && phoneToReplace && (
-                <div className="confirm-modal-overlay">
-                    <div className="confirm-modal-dialog">
-                        <h3>Приёмка замены от поставщика</h3>
-                        <p><strong>Заменяемый телефон:</strong> {phoneToReplace.model?.name} (S/N: {phoneToReplace.serial_number})</p>
-                        <form onSubmit={handleReplacementSubmit} style={{textAlign: 'left'}}>
-                            <div className="form-section">
-                                <label>Новый серийный номер (S/N)*</label>
-                                <input type="text" name="new_serial_number" value={replacementData.new_serial_number} onChange={handleReplacementInputChange} className="form-input" required />
-                            </div>
-                            <div className="form-section">
-                                <label>Новая модель (цвет)*</label>
-                                <select name="new_model_id" value={replacementData.new_model_id} onChange={handleReplacementInputChange} className="form-select" required>
-                                    {replacementOptions.map(opt => (
-                                        <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="confirm-modal-buttons">
-                                <button type="submit" className="btn btn-primary">Подтвердить замену</button>
-                                <button type="button" onClick={() => setIsReplacementModalOpen(false)} className="btn btn-secondary">Отмена</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

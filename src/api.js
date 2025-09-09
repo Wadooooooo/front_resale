@@ -196,11 +196,12 @@ export const createSupplierOrder = async (orderData) => {
     return response.data;
 };
 
-export const receiveSupplierOrder = async (orderId) => {
-    const response = await axios.put(`${API_BASE_URL}/supplier-orders/${orderId}/receive`);
+export const receiveSupplierOrder = async (orderId, returnedPhoneIds) => {
+    const response = await axios.post(`${API_BASE_URL}/supplier-orders/${orderId}/receive`, {
+        returned_phone_ids: returnedPhoneIds
+    });
     return response.data;
 };
-
 // --- НОВАЯ API-ФУНКЦИЯ: Получение уникальных базовых названий моделей ---
 export const getUniqueModelNames = async () => {
     const response = await axios.get(`${API_BASE_URL}/unique_model_names`);
@@ -941,6 +942,41 @@ export const getAccessoryAnalytics = async (startDate, endDate) => {
             end_date: endDate
         }
     });
+    return response.data;
+};
+
+export const createSdekDelivery = async (orderId, data) => {
+    const response = await axios.post(`${API_BASE_URL}/supplier-orders/${orderId}/create-sdek-delivery`, data);
+    return response.data;
+};
+
+export const calculateSdekCost = async (data) => {
+    const response = await axios.post(`${API_BASE_URL}/sdek/calculate-cost`, data);
+    return response.data;
+};
+
+export const getAddressSuggestions = async (query) => {
+    // We don't send requests for very short strings to avoid unnecessary API calls
+    if (!query || query.length < 3) {
+        return [];
+    }
+    const response = await axios.post(`${API_BASE_URL}/utils/suggest-address`, { query });
+    // DaData returns suggestions in a 'suggestions' array
+    return response.data.suggestions || [];
+};
+
+export const createReturnShipment = async (shipmentData) => {
+    const response = await axios.post(`${API_BASE_URL}/return-shipments`, shipmentData);
+    return response.data;
+};
+
+export const getReturnShipments = async () => {
+    const response = await axios.get(`${API_BASE_URL}/return-shipments`);
+    return response.data;
+};
+
+export const createSdekOrderForReturn = async (shipmentId, sdekData) => {
+    const response = await axios.post(`${API_BASE_URL}/return-shipments/${shipmentId}/create-sdek-order`, sdekData);
     return response.data;
 };
 

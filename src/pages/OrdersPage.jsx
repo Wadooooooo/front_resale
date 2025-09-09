@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
+import AsyncSelect from 'react-select/async';
+import { IMaskInput } from 'react-imask';
 import {
     getSupplierOrders, createSupplierOrder, getSuppliers, receiveSupplierOrder,
     getAllModelsFullInfo, getUniqueModelNames, getAllAccessoriesInfo, getStorageOptions,
-    getColorOptions, paySupplierOrder, getAccounts
+    getColorOptions, paySupplierOrder, getAccounts,createSdekDelivery, calculateSdekCost  ,
+    getAddressSuggestions, getPhonesSentToSupplier
 } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -46,11 +49,115 @@ function OrdersPage() {
     });
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [orderIdToConfirm, setOrderIdToConfirm] = useState(null);
+    const [phonesSentToSupplier, setPhonesSentToSupplier] = useState([]);
+    const [returnedWithOrder, setReturnedWithOrder] = useState([]);
+    
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [orderIdToPay, setOrderIdToPay] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentAccount, setPaymentAccount] = useState(null);
     const [paymentNotes, setPaymentNotes] = useState('');
+    const [calculatedCost, setCalculatedCost] = useState(null);
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [isSdekModalOpen, setIsSdekModalOpen] = useState(false);
+    const [currentOrderForSdek, setCurrentOrderForSdek] = useState(null);
+    const [sdekFormData, setSdekFormData] = useState({
+        sender_name: '',
+        sender_phone: '',
+        from_location_address: '', // Адрес отправителя
+        weight: '',
+        length: '',
+        width: '',
+        height: ''
+    });
+
+    const handleOpenSdekModal = (order) => {
+        setCurrentOrderForSdek(order);
+        setCalculatedCost(null); // Сброс
+        setIsSdekModalOpen(true);
+    };
+
+    const handleCalculateCost = async () => {
+        // Проверка, что все поля для расчета заполнены
+        const { from_location_address, weight, length, width, height } = sdekFormData;
+        if (!from_location_address || !weight || !length || !width || !height) {
+            alert('Пожалуйста, заполните адрес отправителя и все габариты для расчета.');
+            return;
+        }
+
+        setIsCalculating(true);
+        setCalculatedCost(null);
+        try {
+            const dataToCalculate = {
+                from_location_address,
+                weight: parseInt(weight),
+                length: parseInt(length),
+                width: parseInt(width),
+                height: parseInt(height),
+            };
+            const result = await calculateSdekCost(dataToCalculate);
+            // Отображаем общую стоимость
+            setCalculatedCost(result.total_sum);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Ошибка при расчете стоимости.');
+        } finally {
+            setIsCalculating(false);
+        }
+    };
+
+    // Список часто используемых имен
+    const quickNames = ["Роман Садыков"]; // Можете добавить любые имена
+
+    const loadAddressOptions = (inputValue, callback) => {
+        // Небольшая задержка, чтобы не отправлять запрос на каждую букву
+        setTimeout(async () => {
+            if (!inputValue || inputValue.length < 3) {
+                callback([]);
+                return;
+            }
+            try {
+                const suggestions = await getAddressSuggestions(inputValue);
+                const options = suggestions.map(s => ({ value: s.value, label: s.value }));
+                callback(options);
+            } catch (error) {
+                console.error("Ошибка при загрузке подсказок адреса:", error);
+                callback([]);
+            }
+        }, 500); // Задержка в 500 мс
+    };
+
+    const handleSdekFormChange = (e) => {
+        const { name, value } = e.target;
+        setSdekFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSdekSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const dataToSend = {
+                ...sdekFormData,
+                weight: parseInt(sdekFormData.weight),
+                length: parseInt(sdekFormData.length),
+                width: parseInt(sdekFormData.width),
+                height: parseInt(sdekFormData.height),
+            };
+            const response = await createSdekDelivery(currentOrderForSdek.id, dataToSend);
+            
+            setFormMessage({ type: 'success', text: 'Заказ в СДЭК успешно создан!' });
+            setIsSdekModalOpen(false);
+
+            // Обновляем состояние заказов, чтобы кнопка исчезла и появился трек-номер
+            setOrders(prevOrders => 
+                prevOrders.map(order => 
+                    order.id === currentOrderForSdek.id 
+                    ? { ...order, sdek_track_number: response.track_number, sdek_uuid: response.sdek_uuid } 
+                    : order
+                )
+            );
+        } catch (err) {
+            setFormMessage({ type: 'error', text: err.response?.data?.detail || 'Ошибка создания заказа в СДЭК' });
+        }
+    };
     
     const { hasPermission } = useAuth();
 
@@ -138,15 +245,30 @@ function OrdersPage() {
     };
     
     // Обработчики действий с заказом
-    const handleReceiveOrder = (orderId) => {
-        setOrderIdToConfirm(orderId);
-        setIsConfirmModalOpen(true);
-    }; //
-    
-        const confirmAndReceiveOrder = async () => {
+    const handleReceiveOrder = async (orderId) => {
+        try {
+            // Перед открытием окна подгружаем список телефонов, которые числятся у поставщика
+            const sentPhones = await getPhonesSentToSupplier();
+            setPhonesSentToSupplier(sentPhones);
+            setReturnedWithOrder([]); // Сбрасываем выбор
+            setOrderIdToConfirm(orderId);
+            setIsConfirmModalOpen(true);
+        } catch (err) {
+            setFormMessage({ type: 'error', text: 'Не удалось загрузить список брака у поставщика.' });
+        }
+    };
+
+    const handleReturnedCheckboxChange = (phoneId) => {
+        setReturnedWithOrder(prev => 
+            prev.includes(phoneId) ? prev.filter(id => id !== phoneId) : [...prev, phoneId]
+        );
+    };
+
+    const confirmAndReceiveOrder = async () => {
         if (!orderIdToConfirm) return;
         try {
-            const updatedOrder = await receiveSupplierOrder(orderIdToConfirm);
+            // Отправляем на бэкенд ID заказа и список ID вернувшихся телефонов
+            const updatedOrder = await receiveSupplierOrder(orderIdToConfirm, returnedWithOrder);
             setOrders(orders.map(order => order.id === orderIdToConfirm ? updatedOrder : order));
             setFormMessage({ type: 'success', text: `Заказ ID ${orderIdToConfirm} успешно получен!` });
         } catch (err) {
@@ -371,24 +493,21 @@ function OrdersPage() {
                             <th>ID Заказа</th>
                             {hasPermission('view_purchase_prices') && <th>Поставщик</th>}
                             <th>Детали заказа</th>
-                            {/* 1. ДОБАВЛЯЕМ НОВЫЙ ЗАГОЛОВОК */}
                             {hasPermission('view_purchase_prices') && <th>Общая стоимость</th>}
                             <th>Статус заказа</th>
                             {hasPermission('view_purchase_prices') && <th>Статус оплаты</th>}
+                            <th>Доставка СДЭК</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {orders.map(order => {
-                            // 2. ВЫЧИСЛЯЕМ ОБЩУЮ СТОИМОСТЬ ЗАКАЗА
                             const totalCost = order.details.reduce((sum, detail) => sum + (detail.quantity * detail.price), 0);
 
                             return (
                                 <tr key={order.id}>
                                     <td>{order.id}</td>
-                                    {hasPermission('view_purchase_prices') && 
-                                        <td>{suppliers.find(s => s.id === order.supplier_id)?.name || 'Неизвестно'}</td>
-                                    }
+                                    {hasPermission('view_purchase_prices') && <td>{suppliers.find(s => s.id === order.supplier_id)?.name || 'Неизвестно'}</td>}
                                     <td>
                                         <ul>
                                             {order.details.map(detail => (
@@ -399,12 +518,21 @@ function OrdersPage() {
                                             ))}
                                         </ul>
                                     </td>
-                                    {/* 3. ДОБАВЛЯЕМ НОВУЮ ЯЧЕЙКУ С ИТОГОВОЙ ЦЕНОЙ */}
-                                    {hasPermission('view_purchase_prices') && 
-                                        <td>{totalCost.toFixed(2)} руб.</td>
-                                    }
+                                    {hasPermission('view_purchase_prices') && <td>{totalCost.toFixed(2)} руб.</td>}
                                     <td>{order.status}</td>
                                     {hasPermission('view_purchase_prices') && <td>{order.payment_status}</td>}
+                                    <td>
+                                        {/* Логика для отображения статуса СДЭК */}
+                                        {order.sdek_track_number ? (
+                                            <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>
+                                                {order.sdek_track_number}
+                                            </div>
+                                        ) : order.sdek_order_uuid ? (
+                                            <div style={{color: '#6c757d'}}>Ожидается...</div>
+                                        ) : (
+                                            'Не создан'
+                                        )}
+                                    </td>
                                     <td>
                                         <div className="action-buttons-container">
                                             {order.status !== 'Получен' && (hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) &&
@@ -413,6 +541,12 @@ function OrdersPage() {
                                             {order.payment_status !== 'Оплачен' && hasPermission('manage_cashflow') &&
                                                 <button onClick={() => handlePayOrder(order.id)} className="btn btn-secondary btn-compact">Оплатить</button>
                                             }
+                                            {/* Кнопка "Создать в СДЭК" теперь проверяет UUID */}
+                                            {hasPermission('manage_inventory') && !order.sdek_order_uuid && (
+                                                <button onClick={() => handleOpenSdekModal(order)} className="btn btn-info btn-compact" style={{backgroundColor: '#0dcaf0'}}>
+                                                    Создать в СДЭК
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -421,6 +555,99 @@ function OrdersPage() {
                     </tbody>
                 </table>
             </div>
+            {isSdekModalOpen && (
+                <div className="confirm-modal-overlay">
+                    <form onSubmit={handleSdekSubmit} className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '500px' }}>
+                        <h3>Создать заказ в СДЭК для заказа №{currentOrderForSdek.id}</h3>
+                        <h4>Отправитель (Поставщик)</h4>
+                        <div className="form-section">
+                            <label>Имя отправителя*</label>
+                            <input 
+                                type="text" 
+                                name="sender_name" 
+                                value={sdekFormData.sender_name} 
+                                onChange={handleSdekFormChange} 
+                                className="form-input" 
+                                required 
+                            />
+                            <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                                {quickNames.map(name => (
+                                    <button 
+                                        key={name} 
+                                        type="button" 
+                                        onClick={() => setSdekFormData(prev => ({...prev, sender_name: name}))} 
+                                        className="btn btn-secondary btn-compact" 
+                                        style={{width: 'auto', marginTop: 0, fontSize: '0.8rem'}}
+                                    >
+                                        {name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="form-section">
+                            <label>Телефон отправителя*</label>
+                            <IMaskInput
+                                mask="+7 (000) 000-00-00"
+                                value={sdekFormData.sender_phone}
+                                onAccept={(value) => handleSdekFormChange({ target: { name: 'sender_phone', value } })}
+                                className="form-input"
+                                placeholder="+7 (___) ___-__-__"
+                                required
+                            />
+                        </div>
+                        <h4>Откуда</h4>
+                         <div className="form-section">
+                            <label>Адрес отправителя*</label>
+                            <AsyncSelect
+                                cacheOptions
+                                loadOptions={loadAddressOptions}
+                                defaultOptions
+                                value={sdekFormData.from_location_address ? { label: sdekFormData.from_location_address, value: sdekFormData.from_location_address } : null}
+                                onChange={(selectedOption) => {
+                                    setSdekFormData(prev => ({ ...prev, from_location_address: selectedOption ? selectedOption.value : '' }));
+                                }}
+                                placeholder="Начните вводить город, улицу..."
+                                loadingMessage={() => 'Поиск...'}
+                                noOptionsMessage={() => 'Нет вариантов или введите больше символов'}
+                                required
+                            />
+                        </div>
+                        <h4>Габариты посылки</h4>
+                        <div className="details-grid">
+                            <div className="form-section">
+                                <label>Вес (граммы)*</label>
+                                <input type="number" name="weight" value={sdekFormData.weight} onChange={handleSdekFormChange} className="form-input" required />
+                            </div>
+                            <div className="form-section">
+                                <label>Длина (см)*</label>
+                                <input type="number" name="length" value={sdekFormData.length} onChange={handleSdekFormChange} className="form-input" required />
+                            </div>
+                            <div className="form-section">
+                                <label>Ширина (см)*</label>
+                                <input type="number" name="width" value={sdekFormData.width} onChange={handleSdekFormChange} className="form-input" required />
+                            </div>
+                            <div className="form-section">
+                                <label>Высота (см)*</label>
+                                <input type="number" name="height" value={sdekFormData.height} onChange={handleSdekFormChange} className="form-input" required />
+                            </div>
+                        </div>
+                        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <button type="button" onClick={handleCalculateCost} className="btn btn-secondary" disabled={isCalculating} style={{ marginTop: 0 }}>
+                                {isCalculating ? 'Расчет...' : 'Рассчитать стоимость'}
+                            </button>
+                            {calculatedCost !== null && (
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                    Стоимость: {parseFloat(calculatedCost).toLocaleString('ru-RU')} руб.
+                                </div>
+                            )}
+                        </div>
+                        <div className="confirm-modal-buttons">
+                            <button type="submit" className="btn btn-primary">Создать</button>
+                            <button type="button" onClick={() => setIsSdekModalOpen(false)} className="btn btn-secondary">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            )}
             {isPaymentModalOpen && (
                     <div className="confirm-modal-overlay">
                         <div className="confirm-modal-dialog">
@@ -467,6 +694,25 @@ function OrdersPage() {
                     <div className="confirm-modal-overlay">
                         <div className="confirm-modal-dialog">
                             <h3>Подтвердите действие</h3>
+                            {phonesSentToSupplier.length > 0 && (
+                            <div style={{marginTop: '1.5rem'}}>
+                                <h4>Вернулось с этим заказом (брак/ремонт):</h4>
+                                <div style={{maxHeight: '200px', overflowY: 'auto', border: '1px solid #dee2e6', borderRadius: '0.5rem', padding: '1rem'}}>
+                                    {phonesSentToSupplier.map(phone => (
+                                        <div key={phone.id}>
+                                            <label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={returnedWithOrder.includes(phone.id)}
+                                                    onChange={() => handleReturnedCheckboxChange(phone.id)}
+                                                />
+                                                {phone.model?.name} (S/N: {phone.serial_number})
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                             <p>Вы уверены, что хотите отметить этот заказ как полученный? Все товары из заказа будут оприходованы.</p>
                             <div className="confirm-modal-buttons">
                                 <button onClick={confirmAndReceiveOrder} className="btn btn-primary">Да, получить</button>
