@@ -54,6 +54,29 @@ export const printReceipt = (saleData) => {
         }
     });
 
+    const hasPhone = saleData.details.some(item => item.serial_number);
+
+    // 2. В зависимости от наличия телефона, создаем разное содержимое для ячейки подписи покупателя
+    let buyerSignatureContentHtml = '';
+    if (hasPhone) {
+        buyerSignatureContentHtml = `
+            <div class="disclaimer-in-signature">
+                <p>
+                    Покупатель осведомлен и согласен, что на устройстве может отсутствовать возможность установки российских приложений (включая RuStore), что не является недостатком. Претензий к товару не имею.
+                </p>
+                <div class="line">
+                    <span>(Подпись / Ф.И.О.)</span>
+                </div>
+            </div>
+        `;
+    } else {
+        buyerSignatureContentHtml = `
+            <div class="line">
+                <span>Претензий к внешнему виду и комплектации не имею</span>
+            </div>
+        `;
+    }
+
     const receiptHtml = `
         <!DOCTYPE html>
         <html lang="ru">
@@ -65,33 +88,24 @@ export const printReceipt = (saleData) => {
             <title>${checkTitle}</title>
             <style>
                 @page {
-                    size: 210mm 148mm ;
+                    size: 210mm 148mm;
                     margin: 0;
                 }
                 body {
-                    display: grid;
                     width: 210mm;
                     height: 148mm;
                     margin: 0 auto;
-                    padding: 0px;
-                    box-sizing: border-box;
-                    background-color: #cecece;
-                    font-family: 'Roboto', sans-serif;
-                }
-                @media print {
-                    body {
-                        background-color: white;
-                    }
-                }
-                .container {
-                    position: relative;
-                    width: 100%;
-                    height: 100%;
                     padding: 20px;
                     box-sizing: border-box;
+                    font-family: 'Roboto', sans-serif;
+                }
+                .container {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    position: relative;
                 }
                 .header {
-                    position: relative;
                     text-align: center;
                     margin-bottom: 10px;
                 }
@@ -108,46 +122,32 @@ export const printReceipt = (saleData) => {
                     margin: 0;
                     font-size: 10pt;
                 }
-
                 .pricelist {
-                margin: 0;
+                    flex-grow: 1;
                 }
                 .price {
                     border-collapse: collapse;
                     width: 100%;
                     background: #fff;
-                    border-radius: 0;
                 }
-                .price th {
+                .price th, .price td {
                     border: 1pt solid black;
-                    padding: 6px 10px;
-                    font-family: 'PT Sans', sans-serif;
-                    font-size: 9pt;
-                    color: black;
-                    text-align: center;
-                }
-                .price td:not(:nth-child(2)) {
-                    border: 1pt solid black;
-                    padding: 6px 10px;
+                    padding: 4px 8px;
                     font-family: 'PT Sans', sans-serif;
                     font-size: 8pt;
                     color: black;
                     text-align: center;
                 }
+                /* --- Изменяем ширину столбцов --- */
                 .price td:nth-child(2){
-                    width: 37%;
-                    border: 1pt solid black;
-                    padding: 6px 10px;
-                    font-family: 'PT Sans', sans-serif;
-                    font-size: 8pt;
-                    color: black;
+                    width: 43%; /* Было 37% */
                     text-align: left;
                 }
                 .price td:nth-child(6),
                 .price td:nth-child(7) {
-                    min-width: 15%;
-                    width: 15%;
+                    width: 12%; /* Было 15% */
                 }
+                /* --- Остальные без изменений --- */
                 .price td:nth-child(5) {
                     width: 8%;
                 }
@@ -155,56 +155,54 @@ export const printReceipt = (saleData) => {
                 .price td:nth-child(4) {
                     width: 10%;
                 }
-        .endprice td:first-child{
-            border-bottom: none;
-            border-left: none;
-            font-size: 9pt;
-            color: black;
-            text-align: right;
-            font-weight: bold;
-        }
-        
-        .endprice td:last-child {
-            text-align: center;
-        }
-        .pricelist p{
-            padding: 6px 10px;
-            margin-top: 10px;
-            font-family: 'PT Sans', sans-serif;
-            font-size: 10pt;
-            color: black;
-        }
-        .signature {
-            position: absolute; 
-            bottom: 0;
-            font-size: 9pt;
-            font-weight: bold;
-            margin-top: 10px;
-            padding-bottom: 0px;
-            width: 95%;
-        }
-        .signature table{
-            table-layout: fixed;
-            border: none;
-            font-weight: bold;
-        }
-        .signature table td:nth-child(1),
-        .signature table td:nth-child(4){
-            border: none;
-            width: 5%;
-        }
-        .signature table td{
-            border: none;
-            width: 30%;
-        }
-        .signature .right{
-            text-align: right;
-        }
-        .signature .line {
-            border-top: 1pt solid black;
-            font-size: 8pt;
-            text-align: justify;
-        }
+                .endprice td:first-child{
+                    border-bottom: none;
+                    border-left: none;
+                    font-size: 9pt;
+                    color: black;
+                    text-align: right;
+                    font-weight: bold;
+                }
+                .endprice td:last-child {
+                    text-align: center;
+                }
+                .totals-summary {
+                    padding: 0;
+                }
+                .totals-summary p {
+                    margin: 0;
+                    font-size: 9pt;
+                    line-height: 1.3;
+                }
+                .signature-wrapper {
+                    flex-shrink: 0;
+                    padding-top: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    width: 100%;
+                }
+                .signature-block {
+                    width: 45%;
+                    text-align: center;
+                }
+                .seller-block { width: 30%; }
+                .buyer-block { width: 65%; }
+                .signature-block .line {
+                    border-top: 1pt solid black;
+                    padding-top: 3px;
+                    margin-top: 15px;
+                }
+                .signature-block .line span { font-size: 7pt; font-weight: normal; }
+                .disclaimer-in-signature {
+                    font-weight: normal;
+                    font-size: 7pt;
+                    text-align: justify;
+                    margin-bottom: 3px;
+                }
+                .disclaimer-in-signature + .line {
+                    margin-top: 3px;
+                }
             </style>
         </head>
         <body>
@@ -266,31 +264,24 @@ export const printReceipt = (saleData) => {
                             </tr>
                         </tbody>
                     </table>
-                    <p style="margin-bottom: 0 !important;">Всего наименований ${saleData.details.length} на сумму ${totalAmount} руб</p>
-                    <p style="margin: 0 !important"><strong>${totalInWords}</strong></p>
+                    <div class="totals-summary">
+                        <p>Всего наименований ${saleData.details.length} на сумму ${totalAmountNum.toFixed(2)} руб.</p>
+                        <p><strong>${totalInWords}</strong></p>
+                    </div>
                 </div>
-                <div class="signature">
-            <table>
-                <tr>
-                    <td>Продавец</td>
-                    <td></td>
-                    <td></td>
-                    <td class="right">Покупатель</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td class="line"></td>
-                    <td></td>
-                    <td></td>
-                    <td class="line">Претензий к внешнему виду и комплектации не имею</td>
-                </tr>
-                <tr>
-                    <td>&nbsp;</td>
-                    <td> </td>
-                </tr>
-            </table>
-        </div>
+                 <div class="signature-wrapper">
+                    <div class="signature-block seller-block">
+                        <strong>Продавец</strong>
+                        <div class="line">
+                            <span>(Подпись)</span>
+                        </div>
+                    </div>
+                    <div class="signature-block buyer-block">
+                        <strong>Покупатель</strong>
+                        ${buyerSignatureContentHtml}
+                    </div>
+                </div>
+                </div>
             </div>
         </body>
         </html>
