@@ -472,3 +472,45 @@ h3 {
     background-color: #157347; /* Более темный зеленый при наведении */
     border-color: #146c43;
 }
+
+.checklist-item-controls input[type="radio"] {
+  /* Скрываем стандартную радио-кнопку */
+  display: none;
+}
+
+.checklist-item-controls label {
+  /* Превращаем текст в кнопку */
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ced4da; /* Добавляем видимую границу */
+  border-radius: 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+  user-select: none; /* Запрещаем выделение текста на кнопке */
+
+  /* Растягиваем кнопку по высоте родительского блока */
+  align-self: stretch;
+  line-height: 1.5; /* Центрируем текст по вертикали */
+}
+
+/* Стиль для ВЫБРАННОЙ кнопки "Пройдено" */
+.checklist-item-controls input[id^="pass"]:checked + label {
+  background-color: #d1e7dd; /* Зеленый фон */
+  border-color: #badbcc;
+  color: #0f5132;
+  font-weight: 600;
+}
+
+/* Стиль для ВЫБРАННОЙ кнопки "Брак" */
+.checklist-item-controls input[id^="fail"]:checked + label {
+  background-color: #f8d7da; /* Красный фон */
+  border-color: #f5c2c7;
+  color: #842029;
+  font-weight: 600;
+}
+
+/* Стиль при наведении на НЕВЫБРАННУЮ кнопку */
+.checklist-item-controls input[type="radio"]:not(:checked) + label:hover {
+    background-color: #e9ecef;
+}
