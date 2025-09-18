@@ -196,25 +196,25 @@ function InspectionPage() {
                                         <div className="checklist-item">
                                             <span className="checklist-item-name">{item.name}</span>
                                             <div className="checklist-item-controls">
-                                                <label>
-                                                    <input 
-                                                        type="radio" 
-                                                        name={`result-${item.id}`} 
-                                                        checked={results[item.id]?.result === true} 
-                                                        onChange={() => handleResultChange(item.id, 'result', true)} 
-                                                    />
-                                                    Пройдено
-                                                </label>
-                                                
-                                                <label>
-                                                    <input 
-                                                        type="radio" 
-                                                        name={`result-${item.id}`} 
-                                                        checked={results[item.id]?.result === false} 
-                                                        onChange={() => handleResultChange(item.id, 'result', false)} 
-                                                    />
-                                                    Брак
-                                                </label>
+                                                {/* VVV НАЧАЛО ИЗМЕНЕНИЙ VVV */}
+                                                <input 
+                                                    type="radio" 
+                                                    id={`pass-${item.id}`}
+                                                    name={`result-${item.id}`} 
+                                                    checked={results[item.id]?.result === true} 
+                                                    onChange={() => handleResultChange(item.id, 'result', true)} 
+                                                />
+                                                <label htmlFor={`pass-${item.id}`}>Пройдено</label>
+
+                                                <input 
+                                                    type="radio" 
+                                                    id={`fail-${item.id}`}
+                                                    name={`result-${item.id}`} 
+                                                    checked={results[item.id]?.result === false} 
+                                                    onChange={() => handleResultChange(item.id, 'result', false)} 
+                                                />
+                                                <label htmlFor={`fail-${item.id}`}>Брак</label>
+                                                {/* ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ */}
                                             </div>
                                         </div>
 
