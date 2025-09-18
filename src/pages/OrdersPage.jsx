@@ -497,6 +497,7 @@ function OrdersPage() {
                             <th>Статус заказа</th>
                             {hasPermission('view_purchase_prices') && <th>Статус оплаты</th>}
                             <th>Доставка СДЭК</th>
+                            <th>Статус СДЭК</th> 
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -533,6 +534,7 @@ function OrdersPage() {
                                             'Не создан'
                                         )}
                                     </td>
+                                    <td><strong>{order.sdek_status || '...'}</strong></td>
                                     <td>
                                         <div className="action-buttons-container">
                                             {order.status !== 'Получен' && (hasPermission('manage_inventory') || hasPermission('receive_supplier_orders')) &&
