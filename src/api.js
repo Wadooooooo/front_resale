@@ -980,3 +980,8 @@ export const createSdekOrderForReturn = async (shipmentId, sdekData) => {
     return response.data;
 };
 
+export const refreshSdekStatusForOrder = async (orderId) => {
+    const response = await axios.get(`${API_BASE_URL}/supplier-orders/${orderId}/sdek-status`);
+    return response.data;
+};
+

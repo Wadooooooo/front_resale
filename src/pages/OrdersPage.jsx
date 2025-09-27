@@ -8,7 +8,7 @@ import {
     getSupplierOrders, createSupplierOrder, getSuppliers, receiveSupplierOrder,
     getAllModelsFullInfo, getUniqueModelNames, getAllAccessoriesInfo, getStorageOptions,
     getColorOptions, paySupplierOrder, getAccounts,createSdekDelivery, calculateSdekCost  ,
-    getAddressSuggestions, getPhonesSentToSupplier
+    getAddressSuggestions, getPhonesSentToSupplier, refreshSdekStatusForOrder
 } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +57,7 @@ function OrdersPage() {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentAccount, setPaymentAccount] = useState(null);
     const [paymentNotes, setPaymentNotes] = useState('');
+    const [isRefreshingAll, setIsRefreshingAll] = useState(false);
     const [calculatedCost, setCalculatedCost] = useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [isSdekModalOpen, setIsSdekModalOpen] = useState(false);
@@ -364,6 +365,58 @@ function OrdersPage() {
                 setFormMessage({ type: 'error', text: err.response?.data?.detail || 'Не удалось оплатить заказ.' });
             }
         };
+
+        const handleRefreshStatus = async (orderId) => {
+            try {
+                // Вызываем нашу новую API функцию
+                const updatedData = await refreshSdekStatusForOrder(orderId);
+
+                // Обновляем состояние, чтобы изменения сразу отобразились в таблице
+                setOrders(prevOrders => 
+                    prevOrders.map(order => 
+                        order.id === orderId 
+                        ? { ...order, ...updatedData } 
+                        : order
+                    )
+                );
+            } catch (error) {
+                alert('Не удалось обновить статус. Попробуйте еще раз через минуту.');
+            }
+        };
+
+        const handleRefreshAllStatuses = async () => {
+            setIsRefreshingAll(true); // Включаем состояние загрузки
+
+            // Находим все заказы, которые нужно проверить
+            const ordersToRefresh = orders.filter(
+                order => order.sdek_order_uuid && !order.sdek_track_number
+            );
+
+            if (ordersToRefresh.length === 0) {
+                alert('Нет заказов, ожидающих трек-номер.');
+                setIsRefreshingAll(false);
+                return;
+            }
+
+            // Создаем массив промисов для всех запросов
+            const refreshPromises = ordersToRefresh.map(order => 
+                refreshSdekStatusForOrder(order.id)
+                    .then(updatedData => ({...order, ...updatedData})) // Возвращаем обновленный заказ
+                    .catch(err => order) // В случае ошибки возвращаем старый заказ
+            );
+
+            // Дожидаемся выполнения всех запросов
+            const updatedOrdersResults = await Promise.all(refreshPromises);
+
+            // Обновляем общее состояние заказов
+            setOrders(prevOrders => 
+                prevOrders.map(pOrder => 
+                    updatedOrdersResults.find(uOrder => uOrder.id === pOrder.id) || pOrder
+                )
+            );
+
+            setIsRefreshingAll(false); // Выключаем состояние загрузки
+        };
     
         const cancelPayOrder = () => {
             setIsPaymentModalOpen(false);
@@ -486,7 +539,17 @@ function OrdersPage() {
             )}
             
             <div className="order-page-container">
-                <h2>Существующие Заказы</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2>Существующие Заказы</h2>
+                    <button 
+                        onClick={handleRefreshAllStatuses} 
+                        className="btn btn-secondary" 
+                        style={{ marginTop: 0 }}
+                        disabled={isRefreshingAll}
+                    >
+                        {isRefreshingAll ? 'Обновление...' : '🔄 Обновить все статусы СДЭК'}
+                    </button>
+                </div>
                 <table className="orders-table">
                     <thead>
                         <tr>
