@@ -46,6 +46,7 @@ function DashboardPage() {
     const [notifications, setNotifications] = useState([]);
     const [lowStockItems, setLowStockItems] = useState([]);
     const [isLowStockVisible, setIsLowStockVisible] = useState(true);
+    const [isLowStockDismissed, setIsLowStockDismissed] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -76,6 +77,11 @@ function DashboardPage() {
 
     const toggleLowStockVisibility = () => {
         setIsLowStockVisible(prevState => !prevState);
+    };
+
+    const handleDismissLowStock = (e) => {
+        e.stopPropagation(); // Предотвращаем сворачивание/разворачивание при клике на крестик
+        setIsLowStockDismissed(true);
     };
 
     const handleMarkNotificationRead = async (id) => {
@@ -175,11 +181,14 @@ function DashboardPage() {
                     ))}
                 </div>
             )}
-            {lowStockItems.length > 0 && (
+            {lowStockItems.length > 0 && !isLowStockDismissed && (
                 <div className="order-page-container low-stock-container">
                     <h2 onClick={toggleLowStockVisibility} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>⚠️ Внимание: Популярные товары заканчиваются</span>
-                        <span className={`toggle-arrow ${isLowStockVisible ? 'expanded' : ''}`}>▼</span>
+                        <div> {/* VVV ДОБАВЛЕН БЛОК ДЛЯ КНОПОК VVV */}
+                            <span className="dismiss-btn" onClick={handleDismissLowStock}>×</span>
+                            <span className={`toggle-arrow ${isLowStockVisible ? 'expanded' : ''}`}>▼</span>
+                        </div>
                     </h2>
                     {isLowStockVisible && (
                         <ul className="low-stock-list">

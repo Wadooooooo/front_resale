@@ -985,3 +985,10 @@ export const refreshSdekStatusForOrder = async (orderId) => {
     return response.data;
 };
 
+export const getExpenseBreakdown = async (startDate, endDate) => {
+    const response = await axios.get(`${API_BASE_URL}/reports/expense-breakdown`, {
+        params: { start_date: startDate, end_date: endDate }
+    });
+    return response.data;
+};
+

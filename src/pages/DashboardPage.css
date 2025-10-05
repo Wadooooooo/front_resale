@@ -145,3 +145,17 @@
 .toggle-arrow.expanded {
     transform: rotate(180deg);
 }
+
+.dismiss-btn {
+    font-size: 2rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0 0.75rem;
+    line-height: 1;
+    font-weight: bold;
+    transition: color 0.15s ease-in-out;
+}
+
+.dismiss-btn:hover {
+    color: #212529;
+}

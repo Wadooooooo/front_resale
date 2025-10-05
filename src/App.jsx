@@ -5,9 +5,10 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import './styles/fonts.css';
 
+
 import './App.css';
 
-
+import ThemeSwitcher from './components/ThemeSwitcher.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import PhonesPage from './pages/PhonesPage.jsx';
 import SuppliersPage from './pages/SuppliersPage.jsx';
@@ -95,7 +96,10 @@ function MainLayout() {
             {(hasPermission('manage_inventory') || hasPermission('perform_sales')) && (<li className="nav-item"><NavLink to="/phone-history" className="nav-link">История телефона</NavLink></li>)}
         </ul>
         <div className="logout-container">
-            <button onClick={logout} className="btn btn-secondary" style={{width: '100%'}}>Выйти</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ThemeSwitcher />
+                <button onClick={logout} className="btn btn-secondary" style={{width: '100%', margin: 0}}>Выйти</button>
+            </div>
         </div>
       </nav>
 

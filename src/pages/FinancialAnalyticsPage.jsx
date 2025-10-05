@@ -162,6 +162,11 @@ function FinancialAnalyticsPage() {
         maintainAspectRatio: false
     };
 
+    const totalExpenses = React.useMemo(() => {
+        if (!chartData || !chartData.pie || !chartData.pie.datasets[0]) return 0;
+        return chartData.pie.datasets[0].data.reduce((sum, value) => sum + parseFloat(value), 0);
+    }, [chartData]);
+
     return (
         <div>
             {/* --- Вызов модального окна --- */}
@@ -187,6 +192,9 @@ function FinancialAnalyticsPage() {
                         <h2>Структура расходов</h2>
                         <div style={{ height: '500px', position: 'relative' }}> 
                             <Pie data={chartData.pie} options={pieChartOptions} />
+                        </div>
+                        <div style={{ marginTop: '1.5rem', textAlign: 'right', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                            Итого расходов: {totalExpenses.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
                         </div>
                     </div>
                 </div>

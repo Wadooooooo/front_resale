@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // ИЗМЕНЕНИЕ: импортируем getQuarterlyTaxReport вместо getTaxReport
-import { getProfitReport, getQuarterlyTaxReport } from '../api';
+import { getProfitReport, getQuarterlyTaxReport, getExpenseBreakdown } from '../api';
 import './OrdersPage.css';
 
 const ReportCard = ({ title, value, colorClass = '' }) => (
@@ -11,6 +11,49 @@ const ReportCard = ({ title, value, colorClass = '' }) => (
         </p>
     </div>
 );
+
+const ExpenseDetailsModal = ({ data, onClose }) => {
+    if (!data) return null;
+    
+    return (
+        <div className="confirm-modal-overlay">
+            <div className="confirm-modal-dialog" style={{ textAlign: 'left', maxWidth: '600px' }}>
+                <h3>Детализация расходов</h3>
+                <p>за период с {data.start_date} по {data.end_date}</p>
+                <table className="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Категория</th>
+                            <th style={{ textAlign: 'right' }}>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.breakdown.map(item => (
+                            <tr key={item.category_name}>
+                                <td>{item.category_name}</td>
+                                <td style={{ textAlign: 'right' }}>
+                                    {parseFloat(item.total_amount).toLocaleString('ru-RU')} руб.
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr style={{ fontWeight: 'bold' }}>
+                            <td>Итого:</td>
+                            <td style={{ textAlign: 'right' }}>
+                                {parseFloat(data.total_expenses).toLocaleString('ru-RU')} руб.
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div className="confirm-modal-buttons">
+                    <button onClick={onClose} className="btn btn-primary">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 function ReportsPage() {
     // Состояния для отчетов
@@ -26,6 +69,9 @@ function ReportsPage() {
     // Новые состояния для квартального отчета
     const [taxYear, setTaxYear] = useState(new Date().getFullYear());
     const [taxQuarter, setTaxQuarter] = useState(Math.floor(new Date().getMonth() / 3) + 1);
+
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [expenseDetails, setExpenseDetails] = useState(null);
 
     const handleGenerateProfitReport = async () => {
         try {
@@ -48,12 +94,23 @@ function ReportsPage() {
         } catch (err) { setError('Не удалось сгенерировать налоговый отчет.'); } finally { setLoading(false); }
     };
 
+    const handleOpenExpenseModal = async () => {
+        try {
+            const data = await getExpenseBreakdown(profitStartDate, profitEndDate);
+            setExpenseDetails(data);
+            setIsExpenseModalOpen(true);
+        } catch (err) {
+            setError('Не удалось загрузить детализацию расходов.');
+        }
+    };
+
     // Опции для выбора года (текущий год + 4 предыдущих)
     const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
     return (
         <div>
             <h1>Отчеты</h1>
+            {isExpenseModalOpen && <ExpenseDetailsModal data={expenseDetails} onClose={() => setIsExpenseModalOpen(false)} />}
             {error && <p className="form-message error">{error}</p>}
 
             {/* Блок отчета по прибыли */}
@@ -79,7 +136,9 @@ function ReportsPage() {
                             <ReportCard title="Выручка" value={profitReport.total_revenue} colorClass="balance-positive" />
                             <ReportCard title="Себестоимость" value={profitReport.total_cogs} />
                             <ReportCard title="Валовая прибыль" value={profitReport.gross_profit} colorClass="balance-positive" />
-                            <ReportCard title="Расходы" value={profitReport.total_expenses} colorClass="balance-negative" />
+                            <div onClick={handleOpenExpenseModal} style={{cursor: 'pointer'}}>
+                                <ReportCard title="Расходы" value={profitReport.total_expenses} colorClass="balance-negative" />
+                            </div>
                             <ReportCard title="Операционная прибыль" value={profitReport.operating_profit} colorClass={parseFloat(profitReport.operating_profit) >= 0 ? 'balance-positive' : 'balance-negative'} />
                         </div>
                     </div>

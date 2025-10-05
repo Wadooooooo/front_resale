@@ -1,0 +1,71 @@
+body[data-theme='light'] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f9fa;
+  --bg-hover: #e9ecef;
+
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-on-primary: #ffffff; /* Текст на синих кнопках */
+
+  --border-color: #dee2e6;
+  --border-color-light: #e9ecef;
+
+  --primary-color: #0d6efd;
+  --primary-color-hover: #0b5ed7;
+  --secondary-color: #6c757d;
+  --secondary-color-hover: #5c636a;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+
+  --input-border: #ced4da;
+  --input-focus-border: #86b7fe;
+  --input-focus-shadow: rgba(13, 110, 253, 0.25);
+  
+  --status-pass-bg: #d1e7dd;
+  --status-pass-border: #badbcc;
+  --status-pass-text: #0f5132;
+  --status-fail-bg: #f8d7da;
+  --status-fail-border: #f5c2c7;
+  --status-fail-text: #842029;
+  --warning-bg: #fff3cd;
+  --warning-border: #ffe69c;
+  --warning-text: #664d03;
+}
+
+body[data-theme='dark'] {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2a2a2a;
+  --bg-hover: #333333;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-on-primary: #ffffff;
+
+  --border-color: #3a3a3a;
+  --border-color-light: #2a2a2a;
+
+  --primary-color: #3b82f6;
+  --primary-color-hover: #2563eb;
+  --secondary-color: #8b949e;
+  --secondary-color-hover: #a1aab4;
+  --success-color: #22c55e;
+  --danger-color: #ef4444;
+  --info-color: #22d3ee;
+
+  --input-border: #444444;
+  --input-focus-border: #3b82f6;
+  --input-focus-shadow: rgba(59, 130, 246, 0.3);
+
+  --status-pass-bg: #1c3b2f;
+  --status-pass-border: #2d5c43;
+  --status-pass-text: #6ee7b7;
+  --status-fail-bg: #4a2125;
+  --status-fail-border: #7f343a;
+  --status-fail-text: #fca5a5;
+  --warning-bg: #332b12;
+  --warning-border: #665424;
+  --warning-text: #fcd34d;
+}

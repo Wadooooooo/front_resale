@@ -11,6 +11,20 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // VVV НАЧАЛО БЛОКА ИЗМЕНЕНИЙ VVV
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+    useEffect(() => {
+        // Применяем тему к body при загрузке и при смене
+        document.body.setAttribute('data-theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+
     const bootstrapAuth = useCallback(async () => {
         const accessToken = getAuthToken();
         const refreshToken = getRefreshToken();
@@ -57,8 +71,10 @@ export function AuthProvider({ children }) {
         return user.role.permissions.some(p => p.code === permissionCode);
     }, [user]);
 
-    const value = { user, token: getAuthToken(), loading, login, logout, hasPermission };
+    const value = { user, token: getAuthToken(), loading, login, logout, hasPermission, theme, toggleTheme };
 
+
+    
     return (
         <AuthContext.Provider value={value}>
             {!loading && children}
